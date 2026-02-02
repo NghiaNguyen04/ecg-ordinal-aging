@@ -1,0 +1,810 @@
+name_ecg,quality
+0002,Barely acceptable
+0003,Barely acceptable
+0004,Barely acceptable
+0005,Barely acceptable
+0007,Unacceptable
+0008,Barely acceptable
+0009,Barely acceptable
+0010,Unacceptable
+0011,Barely acceptable
+0012,Barely acceptable
+0013,Barely acceptable
+0014,Barely acceptable
+0015,Barely acceptable
+0017,Barely acceptable
+0019,Barely acceptable
+0020,Unacceptable
+0021,Barely acceptable
+0022,Barely acceptable
+0023,Barely acceptable
+0024,Barely acceptable
+0025,Barely acceptable
+0030,Barely acceptable
+0032,Barely acceptable
+0034,Barely acceptable
+0035,Unacceptable
+0036,Barely acceptable
+0039,Barely acceptable
+0040,Barely acceptable
+0041,Barely acceptable
+0043,Barely acceptable
+0044,Unacceptable
+0046,Unacceptable
+0048,Barely acceptable
+0049,Barely acceptable
+0050,Barely acceptable
+0051,Unacceptable
+0052,Barely acceptable
+0055,Barely acceptable
+0056,Barely acceptable
+0057,Barely acceptable
+0058,Unacceptable
+0059,Unacceptable
+0061,Barely acceptable
+0062,Unacceptable
+0063,Barely acceptable
+0065,Barely acceptable
+0066,Barely acceptable
+0068,Barely acceptable
+0069,Barely acceptable
+0070,Barely acceptable
+0072,Unacceptable
+0073,Barely acceptable
+0074,Barely acceptable
+0075,Barely acceptable
+0076,Barely acceptable
+0077,Barely acceptable
+0079,Barely acceptable
+0080,Barely acceptable
+0081,Barely acceptable
+0082,Barely acceptable
+0083,Barely acceptable
+0084,Barely acceptable
+0085,Barely acceptable
+0086,Barely acceptable
+0087,Barely acceptable
+0089,Barely acceptable
+0091,Barely acceptable
+0092,Barely acceptable
+0093,Barely acceptable
+0095,Barely acceptable
+0096,Unacceptable
+0098,Barely acceptable
+0099,Barely acceptable
+0100,Barely acceptable
+0101,Barely acceptable
+0102,Barely acceptable
+0103,Barely acceptable
+0104,Barely acceptable
+0107,Unacceptable
+0108,Barely acceptable
+0109,Barely acceptable
+0110,Barely acceptable
+0111,Unacceptable
+0112,Barely acceptable
+0113,Barely acceptable
+0114,Barely acceptable
+0115,Unacceptable
+0116,Barely acceptable
+0117,Barely acceptable
+0118,Barely acceptable
+0119,Barely acceptable
+0120,Barely acceptable
+0121,Unacceptable
+0122,Barely acceptable
+0123,Barely acceptable
+0124,Barely acceptable
+0125,Barely acceptable
+0126,Barely acceptable
+0127,Barely acceptable
+0128,Barely acceptable
+0129,Barely acceptable
+0130,Barely acceptable
+0133,Barely acceptable
+0135,Barely acceptable
+0136,Barely acceptable
+0137,Barely acceptable
+0138,Barely acceptable
+0139,Barely acceptable
+0140,Unacceptable
+0141,Barely acceptable
+0142,Barely acceptable
+0143,Barely acceptable
+0144,Barely acceptable
+0145,Barely acceptable
+0146,Barely acceptable
+0147,Barely acceptable
+0148,Barely acceptable
+0149,Barely acceptable
+0150,Barely acceptable
+0151,Barely acceptable
+0152,Barely acceptable
+0154,Barely acceptable
+0155,Barely acceptable
+0156,Barely acceptable
+0157,Barely acceptable
+0158,Barely acceptable
+0159,Barely acceptable
+0160,Barely acceptable
+0161,Unacceptable
+0162,Barely acceptable
+0163,Barely acceptable
+0164,Barely acceptable
+0166,Barely acceptable
+0167,Unacceptable
+0168,Barely acceptable
+0169,Barely acceptable
+0171,Barely acceptable
+0172,Unacceptable
+0173,Barely acceptable
+0174,Barely acceptable
+0176,Barely acceptable
+0178,Barely acceptable
+0179,Barely acceptable
+0180,Barely acceptable
+0181,Barely acceptable
+0182,Barely acceptable
+0183,Barely acceptable
+0185,Barely acceptable
+0186,Barely acceptable
+0187,Barely acceptable
+0189,Barely acceptable
+0191,Barely acceptable
+0192,Barely acceptable
+0193,Barely acceptable
+0194,Unacceptable
+0195,Unacceptable
+0196,Unacceptable
+0198,Barely acceptable
+0199,Barely acceptable
+0200,Barely acceptable
+0201,Barely acceptable
+0202,Barely acceptable
+0203,Barely acceptable
+0204,Barely acceptable
+0205,Barely acceptable
+0207,Barely acceptable
+0208,Barely acceptable
+0209,Barely acceptable
+0210,Barely acceptable
+0211,Barely acceptable
+0212,Barely acceptable
+0213,Barely acceptable
+0214,Barely acceptable
+0216,Barely acceptable
+0217,Barely acceptable
+0218,Unacceptable
+0219,Barely acceptable
+0221,Unacceptable
+0222,Barely acceptable
+0224,Barely acceptable
+0225,Barely acceptable
+0227,Barely acceptable
+0228,Barely acceptable
+0229,Unacceptable
+0230,Barely acceptable
+0231,Barely acceptable
+0233,Barely acceptable
+0234,Barely acceptable
+0235,Barely acceptable
+0237,Barely acceptable
+0238,Barely acceptable
+0240,Barely acceptable
+0241,Barely acceptable
+0242,Barely acceptable
+0244,Unacceptable
+0245,Barely acceptable
+0246,Unacceptable
+0248,Barely acceptable
+0251,Barely acceptable
+0252,Barely acceptable
+0253,Unacceptable
+0255,Barely acceptable
+0256,Barely acceptable
+0257,Barely acceptable
+0258,Barely acceptable
+0259,Barely acceptable
+0260,Barely acceptable
+0261,Barely acceptable
+0262,Barely acceptable
+0263,Barely acceptable
+0264,Barely acceptable
+0265,Barely acceptable
+0266,Barely acceptable
+0268,Barely acceptable
+0269,Unacceptable
+0273,Barely acceptable
+0274,Unacceptable
+0275,Barely acceptable
+0278,Barely acceptable
+0279,Barely acceptable
+0282,Unacceptable
+0283,Barely acceptable
+0284,Barely acceptable
+0287,Barely acceptable
+0290,Barely acceptable
+0291,Barely acceptable
+0292,Barely acceptable
+0293,Barely acceptable
+0294,Barely acceptable
+0296,Barely acceptable
+0297,Barely acceptable
+0298,Unacceptable
+0299,Barely acceptable
+0300,Barely acceptable
+0301,Barely acceptable
+0303,Barely acceptable
+0307,Barely acceptable
+0308,Barely acceptable
+0311,Barely acceptable
+0312,Barely acceptable
+0314,Barely acceptable
+0315,Barely acceptable
+0316,Barely acceptable
+0317,Barely acceptable
+0321,Barely acceptable
+0323,Barely acceptable
+0324,Unacceptable
+0325,Barely acceptable
+0327,Unacceptable
+0328,Barely acceptable
+0330,Barely acceptable
+0332,Barely acceptable
+0333,Barely acceptable
+0335,Barely acceptable
+0336,Barely acceptable
+0337,Barely acceptable
+0338,Barely acceptable
+0341,Barely acceptable
+0343,Barely acceptable
+0344,Barely acceptable
+0345,Unacceptable
+0346,Barely acceptable
+0347,Barely acceptable
+0348,Barely acceptable
+0349,Barely acceptable
+0350,Barely acceptable
+0351,Barely acceptable
+0354,Barely acceptable
+0356,Barely acceptable
+0357,Barely acceptable
+0358,Barely acceptable
+0359,Barely acceptable
+0360,Unacceptable
+0361,Barely acceptable
+0362,Barely acceptable
+0364,Barely acceptable
+0365,Barely acceptable
+0366,Barely acceptable
+0367,Barely acceptable
+0368,Barely acceptable
+0369,Barely acceptable
+0370,Unacceptable
+0372,Barely acceptable
+0376,Barely acceptable
+0380,Barely acceptable
+0381,Unacceptable
+0383,Barely acceptable
+0386,Barely acceptable
+0388,Barely acceptable
+0389,Barely acceptable
+0390,Barely acceptable
+0391,Barely acceptable
+0393,Barely acceptable
+0394,Barely acceptable
+0395,Barely acceptable
+0396,Barely acceptable
+0397,Barely acceptable
+0399,Barely acceptable
+0401,Barely acceptable
+0402,Unacceptable
+0403,Barely acceptable
+0405,Unacceptable
+0406,Unacceptable
+0408,Barely acceptable
+0409,Barely acceptable
+0410,Barely acceptable
+0412,Barely acceptable
+0413,Barely acceptable
+0414,Barely acceptable
+0415,Barely acceptable
+0416,Barely acceptable
+0418,Barely acceptable
+0419,Unacceptable
+0420,Unacceptable
+0421,Unacceptable
+0422,Barely acceptable
+0424,Barely acceptable
+0426,Barely acceptable
+0428,Barely acceptable
+0429,Barely acceptable
+0434,Barely acceptable
+0437,Barely acceptable
+0438,Unacceptable
+0440,Barely acceptable
+0443,Barely acceptable
+0445,Barely acceptable
+0446,Barely acceptable
+0447,Barely acceptable
+0448,Unacceptable
+0449,Unacceptable
+0450,Unacceptable
+0451,Barely acceptable
+0453,Barely acceptable
+0455,Unacceptable
+0457,Barely acceptable
+0458,Barely acceptable
+0459,Barely acceptable
+0460,Unacceptable
+0461,Barely acceptable
+0462,Barely acceptable
+0464,Barely acceptable
+0466,Barely acceptable
+0467,Barely acceptable
+0468,Barely acceptable
+0470,Barely acceptable
+0471,Barely acceptable
+0472,Barely acceptable
+0477,Barely acceptable
+0478,Barely acceptable
+0479,Barely acceptable
+0481,Unacceptable
+0482,Barely acceptable
+0486,Barely acceptable
+0487,Barely acceptable
+0488,Barely acceptable
+0490,Barely acceptable
+0491,Barely acceptable
+0493,Barely acceptable
+0495,Unacceptable
+0496,Barely acceptable
+0497,Barely acceptable
+0499,Barely acceptable
+0500,Barely acceptable
+0502,Barely acceptable
+0503,Barely acceptable
+0504,Barely acceptable
+0505,Barely acceptable
+0506,Barely acceptable
+0507,Barely acceptable
+0508,Unacceptable
+0509,Barely acceptable
+0511,Barely acceptable
+0513,Barely acceptable
+0514,Barely acceptable
+0515,Barely acceptable
+0517,Barely acceptable
+0518,Barely acceptable
+0519,Barely acceptable
+0520,Barely acceptable
+0521,Barely acceptable
+0523,Unacceptable
+0525,Barely acceptable
+0526,Barely acceptable
+0527,Barely acceptable
+0528,Barely acceptable
+0530,Barely acceptable
+0531,Barely acceptable
+0534,Barely acceptable
+0535,Barely acceptable
+0537,Barely acceptable
+0539,Barely acceptable
+0540,Barely acceptable
+0542,Barely acceptable
+0543,Barely acceptable
+0545,Barely acceptable
+0548,Barely acceptable
+0549,Barely acceptable
+0550,Barely acceptable
+0551,Barely acceptable
+0554,Barely acceptable
+0557,Barely acceptable
+0559,Barely acceptable
+0560,Barely acceptable
+0561,Barely acceptable
+0562,Barely acceptable
+0563,Barely acceptable
+0564,Barely acceptable
+0565,Barely acceptable
+0566,Unacceptable
+0567,Barely acceptable
+0570,Barely acceptable
+0571,Barely acceptable
+0572,Barely acceptable
+0575,Barely acceptable
+0576,Barely acceptable
+0577,Barely acceptable
+0582,Barely acceptable
+0583,Unacceptable
+0584,Barely acceptable
+0585,Barely acceptable
+0586,Barely acceptable
+0587,Barely acceptable
+0589,Barely acceptable
+0591,Barely acceptable
+0592,Barely acceptable
+0593,Barely acceptable
+0594,Barely acceptable
+0595,Barely acceptable
+0596,Barely acceptable
+0597,Barely acceptable
+0598,Barely acceptable
+0600,Barely acceptable
+0602,Barely acceptable
+0603,Barely acceptable
+0604,Barely acceptable
+0605,Barely acceptable
+0606,Barely acceptable
+0607,Barely acceptable
+0608,Barely acceptable
+0612,Barely acceptable
+0614,Barely acceptable
+0615,Barely acceptable
+0616,Barely acceptable
+0619,Barely acceptable
+0620,Barely acceptable
+0621,Barely acceptable
+0622,Barely acceptable
+0623,Unacceptable
+0624,Barely acceptable
+0625,Barely acceptable
+0626,Barely acceptable
+0627,Unacceptable
+0628,Unacceptable
+0630,Barely acceptable
+0631,Barely acceptable
+0632,Barely acceptable
+0633,Barely acceptable
+0634,Barely acceptable
+0635,Barely acceptable
+0636,Barely acceptable
+0637,Barely acceptable
+0638,Barely acceptable
+0639,Barely acceptable
+0640,Barely acceptable
+0641,Barely acceptable
+0642,Barely acceptable
+0646,Barely acceptable
+0647,Unacceptable
+0648,Barely acceptable
+0649,Barely acceptable
+0650,Barely acceptable
+0651,Barely acceptable
+0652,Unacceptable
+0653,Barely acceptable
+0654,Barely acceptable
+0657,Barely acceptable
+0658,Barely acceptable
+0659,Unacceptable
+0660,Barely acceptable
+0661,Unacceptable
+0662,Barely acceptable
+0663,Barely acceptable
+0664,Barely acceptable
+0665,Barely acceptable
+0667,Barely acceptable
+0669,Barely acceptable
+0670,Barely acceptable
+0671,Barely acceptable
+0673,Barely acceptable
+0676,Barely acceptable
+0677,Barely acceptable
+0678,Barely acceptable
+0680,Barely acceptable
+0681,Barely acceptable
+0682,Unacceptable
+0684,Barely acceptable
+0685,Barely acceptable
+0687,Barely acceptable
+0689,Unacceptable
+0690,Barely acceptable
+0692,Barely acceptable
+0694,Barely acceptable
+0695,Barely acceptable
+0697,Barely acceptable
+0698,Barely acceptable
+0699,Barely acceptable
+0700,Barely acceptable
+0703,Barely acceptable
+0704,Barely acceptable
+0705,Barely acceptable
+0706,Barely acceptable
+0707,Barely acceptable
+0708,Barely acceptable
+0709,Barely acceptable
+0710,Barely acceptable
+0711,Barely acceptable
+0713,Unacceptable
+0714,Barely acceptable
+0715,Barely acceptable
+0716,Barely acceptable
+0717,Barely acceptable
+0719,Barely acceptable
+0721,Barely acceptable
+0722,Barely acceptable
+0723,Barely acceptable
+0724,Barely acceptable
+0725,Barely acceptable
+0727,Barely acceptable
+0729,Unacceptable
+0730,Barely acceptable
+0732,Barely acceptable
+0733,Unacceptable
+0734,Barely acceptable
+0735,Barely acceptable
+0737,Barely acceptable
+0738,Barely acceptable
+0741,Barely acceptable
+0743,Barely acceptable
+0744,Barely acceptable
+0745,Barely acceptable
+0747,Barely acceptable
+0750,Barely acceptable
+0754,Barely acceptable
+0755,Barely acceptable
+0756,Barely acceptable
+0757,Barely acceptable
+0758,Barely acceptable
+0759,Barely acceptable
+0760,Barely acceptable
+0761,Barely acceptable
+0763,Barely acceptable
+0764,Barely acceptable
+0766,Barely acceptable
+0767,Barely acceptable
+0768,Barely acceptable
+0769,Barely acceptable
+0770,Barely acceptable
+0771,Barely acceptable
+0772,Barely acceptable
+0776,Barely acceptable
+0778,Barely acceptable
+0779,Barely acceptable
+0781,Barely acceptable
+0782,Barely acceptable
+0783,Unacceptable
+0784,Unacceptable
+0785,Barely acceptable
+0786,Barely acceptable
+0787,Barely acceptable
+0788,Barely acceptable
+0789,Barely acceptable
+0790,Barely acceptable
+0791,Barely acceptable
+0792,Barely acceptable
+0793,Barely acceptable
+0794,Barely acceptable
+0797,Barely acceptable
+0798,Barely acceptable
+0799,Barely acceptable
+0800,Barely acceptable
+0802,Barely acceptable
+0803,Barely acceptable
+0804,Barely acceptable
+0805,Barely acceptable
+0806,Unacceptable
+0807,Barely acceptable
+0808,Barely acceptable
+0809,Barely acceptable
+0810,Barely acceptable
+0811,Barely acceptable
+0812,Barely acceptable
+0813,Barely acceptable
+0814,Barely acceptable
+0816,Barely acceptable
+0817,Barely acceptable
+0818,Unacceptable
+0819,Barely acceptable
+0820,Barely acceptable
+0821,Barely acceptable
+0822,Unacceptable
+0823,Unacceptable
+0824,Barely acceptable
+0826,Barely acceptable
+0827,Barely acceptable
+0828,Barely acceptable
+0829,Barely acceptable
+0831,Barely acceptable
+0832,Barely acceptable
+0833,Barely acceptable
+0834,Barely acceptable
+0835,Barely acceptable
+0836,Barely acceptable
+0839,Unacceptable
+0840,Barely acceptable
+0842,Barely acceptable
+0844,Barely acceptable
+0845,Barely acceptable
+0846,Barely acceptable
+0848,Barely acceptable
+0850,Unacceptable
+0851,Barely acceptable
+0852,Barely acceptable
+0854,Barely acceptable
+0855,Unacceptable
+0856,Barely acceptable
+0857,Unacceptable
+0858,Barely acceptable
+0859,Barely acceptable
+0860,Unacceptable
+0861,Barely acceptable
+0863,Barely acceptable
+0864,Barely acceptable
+0865,Barely acceptable
+0867,Barely acceptable
+0870,Barely acceptable
+0871,Barely acceptable
+0872,Barely acceptable
+0873,Barely acceptable
+0874,Barely acceptable
+0875,Barely acceptable
+0876,Barely acceptable
+0878,Barely acceptable
+0879,Barely acceptable
+0880,Barely acceptable
+0881,Barely acceptable
+0882,Barely acceptable
+0883,Barely acceptable
+0884,Unacceptable
+0885,Barely acceptable
+0887,Barely acceptable
+0890,Barely acceptable
+0892,Barely acceptable
+0894,Unacceptable
+0895,Barely acceptable
+0896,Barely acceptable
+0897,Barely acceptable
+0898,Barely acceptable
+0899,Barely acceptable
+0902,Barely acceptable
+0903,Barely acceptable
+0904,Barely acceptable
+0905,Barely acceptable
+0909,Barely acceptable
+0910,Barely acceptable
+0911,Barely acceptable
+0913,Barely acceptable
+0915,Barely acceptable
+0916,Barely acceptable
+0918,Barely acceptable
+0919,Barely acceptable
+0920,Barely acceptable
+0921,Barely acceptable
+0922,Barely acceptable
+0926,Barely acceptable
+0927,Barely acceptable
+0928,Barely acceptable
+0931,Barely acceptable
+0932,Barely acceptable
+0934,Barely acceptable
+0935,Barely acceptable
+0936,Barely acceptable
+0937,Barely acceptable
+0939,Barely acceptable
+0940,Unacceptable
+0941,Barely acceptable
+0944,Barely acceptable
+0945,Barely acceptable
+0946,Barely acceptable
+0947,Barely acceptable
+0948,Barely acceptable
+0949,Unacceptable
+0950,Barely acceptable
+0953,Barely acceptable
+0954,Barely acceptable
+0955,Barely acceptable
+0956,Barely acceptable
+0957,Barely acceptable
+0958,Barely acceptable
+0959,Barely acceptable
+0960,Barely acceptable
+0961,Barely acceptable
+0962,Barely acceptable
+0964,Barely acceptable
+0965,Barely acceptable
+0966,Barely acceptable
+0967,Barely acceptable
+0969,Barely acceptable
+0970,Unacceptable
+0971,Barely acceptable
+0973,Barely acceptable
+0976,Barely acceptable
+0979,Barely acceptable
+0981,Barely acceptable
+0982,Barely acceptable
+0983,Barely acceptable
+0984,Barely acceptable
+0985,Barely acceptable
+0986,Barely acceptable
+0987,Barely acceptable
+0989,Barely acceptable
+0990,Barely acceptable
+0991,Barely acceptable
+0992,Barely acceptable
+0993,Barely acceptable
+0995,Barely acceptable
+0996,Barely acceptable
+0997,Barely acceptable
+0999,Barely acceptable
+1000,Barely acceptable
+1001,Barely acceptable
+1002,Barely acceptable
+1003,Barely acceptable
+1004,Barely acceptable
+1005,Barely acceptable
+1006,Barely acceptable
+1008,Barely acceptable
+1010,Barely acceptable
+1011,Unacceptable
+1014,Barely acceptable
+1017,Barely acceptable
+1018,Barely acceptable
+1019,Barely acceptable
+1020,Unacceptable
+1021,Barely acceptable
+1022,Barely acceptable
+1023,Barely acceptable
+1025,Barely acceptable
+1027,Barely acceptable
+1029,Barely acceptable
+1030,Barely acceptable
+1034,Barely acceptable
+1035,Barely acceptable
+1036,Barely acceptable
+1037,Barely acceptable
+1038,Barely acceptable
+1039,Barely acceptable
+1040,Unacceptable
+1041,Barely acceptable
+1042,Barely acceptable
+1046,Barely acceptable
+1047,Barely acceptable
+1049,Unacceptable
+1050,Barely acceptable
+1051,Barely acceptable
+1052,Barely acceptable
+1053,Unacceptable
+1055,Barely acceptable
+1057,Barely acceptable
+1058,Barely acceptable
+1060,Barely acceptable
+1063,Barely acceptable
+1065,Barely acceptable
+1066,Barely acceptable
+1067,Barely acceptable
+1068,Barely acceptable
+1069,Barely acceptable
+1070,Unacceptable
+1071,Barely acceptable
+1072,Barely acceptable
+1073,Barely acceptable
+1075,Unacceptable
+1076,Barely acceptable
+1077,Barely acceptable
+1079,Barely acceptable
+1081,Barely acceptable
+1083,Unacceptable
+1084,Barely acceptable
+1085,Unacceptable
+1088,Unacceptable
+1089,Barely acceptable
+1092,Barely acceptable
+1093,Barely acceptable
+1095,Barely acceptable
+1097,Barely acceptable
+1101,Barely acceptable
+1104,Barely acceptable
+1106,Barely acceptable
+1107,Unacceptable
+1108,Barely acceptable
+1110,Barely acceptable
+1111,Barely acceptable
+1112,Barely acceptable
+1113,Barely acceptable
+1114,Barely acceptable
+1115,Barely acceptable
+1116,Barely acceptable
+1119,Barely acceptable
+1120,Barely acceptable
+1121,Barely acceptable
