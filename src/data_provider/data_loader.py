@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
 class AAGINGLoader:
     def __init__(
         self,
-        root_dir: str,
+        csv_path: str,
         float_dtype: str = "float32",   # "float32" | "float64"
         add_channel_dim: bool = True,   # True → (N,1,L)
         verbose: bool = True,
@@ -16,7 +16,7 @@ class AAGINGLoader:
         use_bmi: bool = False,
         use_sex: bool = False,
     ) -> None:
-        self.root_dir = Path(root_dir)
+        self.csv_path = Path(csv_path)
         self.float_dtype = "float32" if str(float_dtype).lower() == "float32" else "float64"
         self.add_channel_dim = bool(add_channel_dim)
         self.verbose = bool(verbose)
@@ -29,7 +29,7 @@ class AAGINGLoader:
 
     # --------------------- public API --------------------- #
     def load(self) -> Dict[str, np.ndarray]:
-        df_full = self._read_csv("rri_hrv_full.csv")
+        df_full = self._read_csv()
         # ---- Features ----
         if self.use_sex and self.use_bmi:
             x_train = df_full.iloc[:, 2:].to_numpy(dtype=self.float_dtype)
@@ -56,11 +56,10 @@ class AAGINGLoader:
         return arrays
 
     # --------------------- helpers --------------------- #
-    def _read_csv(self, name: str) -> pd.DataFrame:
-        path = self.root_dir / name
-        if not path.is_file():
-            raise FileNotFoundError(f"Missing {name}: {path}")
-        return pd.read_csv(path, dtype={'ID': str})
+    def _read_csv(self) -> pd.DataFrame:
+        if not self.csv_path.is_file():
+            raise FileNotFoundError(f"Missing file: {self.csv_path}")
+        return pd.read_csv(self.csv_path, dtype={'ID': str})
 
 
     @staticmethod

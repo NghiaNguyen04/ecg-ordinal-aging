@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from collections import defaultdict
 from torchmetrics.classification import MulticlassAccuracy, MulticlassF1Score
-from src.loss_function.HybridLoss import HybridLoss
+from loss_function.HybridLoss import HybridLoss
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import (
     balanced_accuracy_score,
@@ -67,7 +67,7 @@ class ResNet1DLightning(pl.LightningModule):
         nb_classes: int = 4,
         lr: float = 1e-4,
         weight_decay: float = 1e-4,
-        dropout: float = 0.2,
+        dropout: float = 0.5,
         class_weights: Optional[torch.Tensor] = None,
         sklearn_average: str = "macro",
         use_bmi: bool = False,
@@ -96,8 +96,11 @@ class ResNet1DLightning(pl.LightningModule):
         elif self.use_bmi or self.use_sex:
             in_feature += 1
 
-        self.head = nn.Sequential(             # -> (B, 256)
+        self.head = nn.Sequential(    
             nn.Linear(in_feature, 1000),
+            nn.ReLU(inplace=True),
+            nn.Dropout(dropout),
+            nn.Linear(1000, 1000),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout),
             nn.Linear(1000, 1000),
@@ -112,7 +115,12 @@ class ResNet1DLightning(pl.LightningModule):
         else:
             self.class_weights = None
 
-        self.criterion = HybridLoss(class_weights=class_weights)
+        # Cập nhật median cho 4 nhóm tuổi: (18-29, 30-39, 40-49, 50-92)
+        # Tính toán thực tế từ dữ liệu: 22.0, 32.0, 44.5, 62.0
+        self.criterion = HybridLoss(
+            class_weights=class_weights, 
+            class_medians=(22.0, 32.0, 44.5, 62.0)
+        )
 
         self.acc = MulticlassAccuracy(num_classes=nb_classes, average="macro")
         self.f1  = MulticlassF1Score(num_classes=nb_classes, average="macro")

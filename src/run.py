@@ -53,11 +53,19 @@ def coral_pos_weight_from_labels(y_train: np.ndarray, num_classes: int) -> torch
     return torch.tensor(weights, dtype=torch.float32)
 
 def load_dataset(args: argparse.Namespace):
-    data_ndarray = {}
-    if args.dataset_name == "AAGING_300s":
-        data_ndarray = AAGINGLoader(args.root_dir, seed=args.seed, use_bmi = args.use_bmi, use_sex = args.use_sex).load()
-
-    return data_ndarray
+    if args.dataset_name == "tfresh":
+        from data_provider.data_loader import TsfreshLoader
+        # tfresh vẫn dùng root_dir làm thư mục chứa nhiều file
+        return TsfreshLoader(args.root_dir, seed=args.seed).load()
+    
+    # Mặc định sử dụng AAGINGLoader, truyền thẳng đường dẫn file CSV từ root_dir
+    loader = AAGINGLoader(
+        csv_path=args.root_dir, 
+        seed=args.seed, 
+        use_bmi=args.use_bmi, 
+        use_sex=args.use_sex
+    )
+    return loader.load()
 
 def load_model(args: argparse.Namespace, class_weights, y_train_np: np.ndarray = None) -> pl.LightningModule:
     if args.model == "Resnet34_hybrid":
@@ -116,9 +124,11 @@ def train(args: argparse.Namespace):
         raise ValueError(f"fold_index phải trong [0, {args.n_splits-1}] hoặc = -1")
     selected_folds = range(args.n_splits) if args.fold_index == -1 else [args.fold_index]
 
-    # ---------- Tên run chung ----------
+    # ---------- Tên run chung & Base directory ----------
     run_timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     exp_name = args.name or f"{args.model}_{run_timestamp}"
+    base_exp_dir = os.path.join(args.log_dir, exp_name)
+    os.makedirs(base_exp_dir, exist_ok=True)
 
     all_metrics_test: List[Dict[str, float]] = []
     oof_rows: List[Dict[str, Any]] = []   # lưu tất cả VAL-preds của mọi folds
@@ -177,10 +187,10 @@ def train(args: argparse.Namespace):
         model = load_model(args, class_weights, y_train_raw)
 
         # --- Logger ---
-        exp_name_fold = f"{exp_name}_fold{fold_idx+1}"
-        logger_tb = TensorBoardLogger(save_dir=args.log_dir, name=exp_name_fold, default_hp_metric=False)
+        fold_name = f"fold_{fold_idx+1}"
+        logger_tb = TensorBoardLogger(save_dir=base_exp_dir, name=fold_name, version="", default_hp_metric=False)
         if args.use_wandb:
-            logger_wandb = WandbLogger(project="ECG_Classification_PL", name=exp_name_fold)
+            logger_wandb = WandbLogger(project="ECG_Classification_PL", name=f"{exp_name}_{fold_name}")
             logger = [logger_tb, logger_wandb]
         else:
             logger = [logger_tb]
@@ -308,7 +318,7 @@ def train(args: argparse.Namespace):
             }
             print(f"{c}: {mu:.4f} ± {sd:.4f}")
 
-    cv_oof_cm_dir = os.path.join(args.log_dir, f"{args.model}", f"_{run_timestamp}")
+    cv_oof_cm_dir = base_exp_dir
     os.makedirs(cv_oof_cm_dir, exist_ok=True)
 
     cv_stats_path = os.path.join(cv_oof_cm_dir, f"{exp_name}_cv_stats.json")
@@ -450,9 +460,9 @@ if __name__ == "__main__":
 #       ConvTimeNet, ConvTimeNet_coralLoss, Resnet34_FocalCos
 
 # python run.py `
-#     --root-dir "data/data_300s" `
-#     --dataset-name "AAGING_300s" `
-#     --model "Resnet34_FocalCos" `
+#     --root-dir "data/processed/seg_300s" `
+#     --dataset-name "data_300s_order5" `
+#     --model "Resnet34_hybrid" `
 #     --log-dir "result" `
 #     --batch-size 32 `
 #     --max-epochs 2 `
@@ -462,9 +472,17 @@ if __name__ == "__main__":
 #     --use-wandb
 #
 
+# python src/run.py \
+#     --root-dir "data/processed/seg_300s/data_300s_order5.csv" \
+#     --dataset-name "data_300s_order5" \
+#     --model "Resnet34_hybrid" \
+#     --log-dir "result" \
+#     --batch-size 32 \
+#     --max-epochs 100 \
+#     --n-splits 5
+
 # python run.py `
 #     --root-dir "data/data_300s" `
-#     --dataset-name "AAGING_300s" `
 #     --model "Resnet34" `
 #     --log-dir "result" `
 #     --max-epochs 150 `
