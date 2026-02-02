@@ -1,0 +1,16 @@
+# Data files
+*.dat
+*.hea
+
+# Python virtual environment
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# IDEs
+.vscode/
+.idea/

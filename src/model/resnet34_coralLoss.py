@@ -6,7 +6,7 @@ from torch import nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from torchmetrics.classification import MulticlassAccuracy, MulticlassF1Score
-from loss_function.CoralLoss import CoralHead, CoralLoss, coral_encode_targets, coral_decode
+from src.loss_function.CoralLoss import CoralHead, CoralLoss, coral_encode_targets, coral_decode
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import (
     balanced_accuracy_score,
@@ -14,7 +14,6 @@ from sklearn.metrics import (
     cohen_kappa_score,
     accuracy_score,
 )
-
 # ---------------------------
 # 1D-ResNet34 (Modified)
 # ---------------------------

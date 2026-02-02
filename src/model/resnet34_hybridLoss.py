@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from collections import defaultdict
 from torchmetrics.classification import MulticlassAccuracy, MulticlassF1Score
-from loss_function.HybridLoss import HybridLoss
+from src.loss_function.HybridLoss import HybridLoss
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import (
     balanced_accuracy_score,
