@@ -1,6 +1,7 @@
 # Data files
 *.dat
 *.hea
+*.ckpt
 
 # Python virtual environment
 venv/

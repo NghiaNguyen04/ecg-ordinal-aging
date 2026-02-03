@@ -67,7 +67,7 @@ class ResNet1D_FocalCos(pl.LightningModule):
         nb_classes: int = 4,
         lr: float = 1e-4,
         weight_decay: float = 1e-4,
-        dropout: float = 0.2,
+        dropout: float = 0.5,
         class_weights: Optional[torch.Tensor] = None,
         sklearn_average: str = "macro",
         use_bmi: bool = False,
@@ -95,8 +95,12 @@ class ResNet1D_FocalCos(pl.LightningModule):
             in_feature += 2
         elif self.use_bmi or self.use_sex:
             in_feature += 1
-        self.head = nn.Sequential(             # -> (B, 256)
+
+        self.head = nn.Sequential(    
             nn.Linear(in_feature, 1000),
+            nn.ReLU(inplace=True),
+            nn.Dropout(dropout),
+            nn.Linear(1000, 1000),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout),
             nn.Linear(1000, 1000),
@@ -104,6 +108,7 @@ class ResNet1D_FocalCos(pl.LightningModule):
             nn.Dropout(dropout),
             nn.Linear(1000, nb_classes),
         )
+
         self.nb_classes = nb_classes
         # Loss & metrics
         if class_weights is not None:

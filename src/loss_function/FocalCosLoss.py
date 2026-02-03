@@ -20,7 +20,7 @@ class FocalCosLoss(nn.Module):
     """
 
     def __init__(self,
-                 class_medians=(24, 35, 44, 55),
+                 class_medians=(22.0, 32.0, 44.5, 62.0),
                  class_weights=None,
                  gamma=2.0,
                  lambda_ce=1.0,

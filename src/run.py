@@ -475,10 +475,10 @@ if __name__ == "__main__":
 # python src/run.py \
 #     --root-dir "data/processed/seg_300s/data_300s_order5.csv" \
 #     --dataset-name "data_300s_order5" \
-#     --model "Resnet34_hybrid" \
+#     --model "Resnet34_FocalCos" \
 #     --log-dir "result" \
 #     --batch-size 32 \
-#     --max-epochs 100 \
+#     --max-epochs 120 \
 #     --n-splits 5
 
 # python run.py `
