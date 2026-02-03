@@ -115,8 +115,6 @@ class ResNet1DLightning(pl.LightningModule):
         else:
             self.class_weights = None
 
-        # Cập nhật median cho 4 nhóm tuổi: (18-29, 30-39, 40-49, 50-92)
-        # Tính toán thực tế từ dữ liệu: 22.0, 32.0, 44.5, 62.0
         self.criterion = HybridLoss(
             class_weights=class_weights, 
             class_medians=(22.0, 32.0, 44.5, 62.0)

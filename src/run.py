@@ -473,13 +473,14 @@ if __name__ == "__main__":
 #
 
 # python src/run.py \
-#     --root-dir "data/processed/seg_300s/data_300s_order5.csv" \
-#     --dataset-name "data_300s_order5" \
+#     --root-dir "data/processed/seg_300s/data_300s_order4.csv" \
+#     --dataset-name "data_300s_order4" \
 #     --model "Resnet34_hybrid" \
 #     --log-dir "result" \
 #     --batch-size 32 \
 #     --max-epochs 100 \
-#     --n-splits 5
+#     --n-splits 5 \
+#     --num-workers 14
 
 # python run.py `
 #     --root-dir "data/data_300s" `
