@@ -163,8 +163,12 @@ class ResNet1DLightning(pl.LightningModule):
         loss = self.criterion(logits, y)
         preds = logits.argmax(dim=1)
         acc = (preds == y).float().mean()
+        
+        # Log metrics
+        self.f1(preds, y)
         self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("train_acc", acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("train_f1", self.f1, on_step=False, on_epoch=True, prog_bar=True)
         return loss
 
     def on_validation_epoch_start(self) -> None:

@@ -148,8 +148,10 @@ class ResNet1D_CoralLoss(pl.LightningModule):
         preds = coral_decode(logits)  # (B,)
 
         acc = (preds == y).float().mean()
+        self.f1(preds, y)
         self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("train_acc", acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("train_f1", self.f1, on_step=False, on_epoch=True, prog_bar=True)
         return loss
 
     def on_validation_epoch_start(self) -> None:

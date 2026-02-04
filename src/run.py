@@ -17,8 +17,7 @@ import torch
 import wandb
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
-from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger, CSVLogger
 
 from model.resnet34_hybridLoss import ResNet1DLightning
 from model.resnet34_coralLoss import ResNet1D_CoralLoss
@@ -91,6 +90,58 @@ def load_model(args: argparse.Namespace, class_weights, y_train_np: np.ndarray =
         )
 
     return None
+    
+def plot_training_history(log_dir: str, name: str):
+    """
+    Plots training and validation loss/f1 from metrics.csv and saves as PDF/PNG.
+    """
+    csv_path = Path(log_dir) / "metrics.csv"
+    if not csv_path.exists():
+        print(f"[WARN] Metrics file not found at {csv_path}")
+        return
+
+    try:
+        df = pd.read_csv(csv_path)
+        # CSVLogger logs train and val on different lines. Merge by epoch.
+        df_epoch = df.groupby("epoch").mean(numeric_only=True)
+        
+        if len(df_epoch) == 0:
+            return
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+        
+        # 1. Loss Plot
+        if "train_loss" in df_epoch.columns:
+            ax1.plot(df_epoch.index, df_epoch["train_loss"], label="Train Loss", marker='o', markersize=3)
+        if "val_loss" in df_epoch.columns:
+            ax1.plot(df_epoch.index, df_epoch["val_loss"], label="Val Loss", marker='x', markersize=3)
+        ax1.set_title(f"Loss History - {name}")
+        ax1.set_xlabel("Epoch")
+        ax1.set_ylabel("Loss")
+        ax1.legend()
+        ax1.grid(True, linestyle='--', alpha=0.6)
+
+        # 2. F1-Score Plot
+        if "train_f1" in df_epoch.columns:
+            ax2.plot(df_epoch.index, df_epoch["train_f1"], label="Train F1", marker='o', markersize=3)
+        if "val_f1" in df_epoch.columns:
+            ax2.plot(df_epoch.index, df_epoch["val_f1"], label="Val F1", marker='x', markersize=3)
+        ax2.set_title(f"F1-Score History - {name}")
+        ax2.set_xlabel("Epoch")
+        ax2.set_ylabel("Macro F1")
+        ax2.legend()
+        ax2.grid(True, linestyle='--', alpha=0.6)
+
+        plt.tight_layout()
+        
+        pdf_path = Path(log_dir) / f"{name}_history.pdf"
+        png_path = Path(log_dir) / f"{name}_history.png"
+        plt.savefig(pdf_path)
+        plt.savefig(png_path)
+        plt.close(fig)
+        print(f"Exported training plots to {pdf_path}")
+    except Exception as e:
+        print(f"[ERROR] Failed to plot history for {name}: {e}")
 
 # -------------------- TRAIN FUNCTION --------------------
 def train(args: argparse.Namespace):
@@ -179,11 +230,11 @@ def train(args: argparse.Namespace):
         # --- Logger ---
         exp_name_fold = f"{exp_name}_fold{fold_idx+1}"
         logger_tb = TensorBoardLogger(save_dir=args.log_dir, name=exp_name_fold, default_hp_metric=False)
+        logger_csv = CSVLogger(save_dir=args.log_dir, name=exp_name_fold)
+        logger = [logger_tb, logger_csv]
         if args.use_wandb:
             logger_wandb = WandbLogger(project="ECG_Classification_PL", name=exp_name_fold)
-            logger = [logger_tb, logger_wandb]
-        else:
-            logger = [logger_tb]
+            logger.append(logger_wandb)
 
         # --- Callbacks: theo dõi val_f1 ---
         monitor_metric = "val_f1"
@@ -211,6 +262,9 @@ def train(args: argparse.Namespace):
 
         # --- Fit ---
         trainer.fit(model, datamodule=dm, ckpt_path=args.resume_from or None)
+
+        # --- Plot Training History ---
+        plot_training_history(logger_csv.log_dir, exp_name_fold)
 
         # --- test ở best checkpoint ---
         best_path = ckpt.best_model_path or None
