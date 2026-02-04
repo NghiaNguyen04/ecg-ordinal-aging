@@ -1,0 +1,33 @@
+{
+  "best_ckpt": "result/Resnet34_FocalCos_20260204-101943/fold_4/checkpoints/best-11-0.6361.ckpt",
+  "monitor": "val_kappa",
+  "patience": 30,
+  "log_dir": "result/Resnet34_FocalCos_20260204-101943/fold_4/",
+  "in_channels": 1,
+  "nb_classes": 4,
+  "nb_filters": 32,
+  "depth": 6,
+  "kernel_size": 41,
+  "bottleneck_size": 32,
+  "use_residual": true,
+  "use_bottleneck": true,
+  "lr": 0.0001,
+  "average": "macro",
+  "standardize": true,
+  "use_weighted_sampler": false,
+  "seed": 42,
+  "precision": "32",
+  "fold": 4,
+  "all_metrics_test": {
+    "fold": 4,
+    "test_f1": 0.4188852906227112,
+    "test_loss": 0.5991531610488892,
+    "test_precision": 0.41604912281036377,
+    "test_recall": 0.449502170085907,
+    "test_accuracy": 0.6089552044868469,
+    "test_balanced_acc": 0.449502170085907,
+    "test_kappa": 0.5614356398582458,
+    "log_dir": "result/Resnet34_FocalCos_20260204-101943/fold_4/",
+    "best_ckpt": "result/Resnet34_FocalCos_20260204-101943/fold_4/checkpoints/best-11-0.6361.ckpt"
+  }
+}

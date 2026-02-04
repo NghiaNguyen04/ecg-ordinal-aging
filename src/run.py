@@ -196,8 +196,8 @@ def train(args: argparse.Namespace):
         else:
             logger = [logger_tb]
 
-        # --- Callbacks: theo dõi val_f1 ---
-        monitor_metric = "val_f1"
+        # --- Callbacks: theo dõi val_kappa ---
+        monitor_metric = "val_kappa"
         ckpt = ModelCheckpoint(
             monitor=monitor_metric,
             mode="max",
@@ -475,14 +475,16 @@ if __name__ == "__main__":
 #
 
 # python src/run.py \
-#     --root-dir "data/processed/seg_300s/data_300s_order5.csv" \
-#     --dataset-name "data_300s_order5" \
+#     --root-dir "data/processed/seg_300s/data_300s_order5_rmNegativeRRI.csv" \
+#     --dataset-name "data_300s_order5_rmNegativeRRI" \
 #     --model "Resnet34_FocalCos" \
 #     --log-dir "result" \
-#     --batch-size 32 \
+#     --batch-size 16 \
 #     --max-epochs 120 \
 #     --n-splits 5 \
-#     --use-uncertainty-weighting
+#     --use-uncertainty-weighting \
+#     --use-bmi \
+#     --use-sex
 
 # python run.py `
 #     --root-dir "data/data_300s" `
