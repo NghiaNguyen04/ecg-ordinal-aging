@@ -1,0 +1,33 @@
+{
+  "best_ckpt": "result/Resnet34_hybrid_20260204-121218/fold_5/checkpoints/best-26-0.7066.ckpt",
+  "monitor": "val_kappa",
+  "patience": 30,
+  "log_dir": "result/Resnet34_hybrid_20260204-121218/fold_5/",
+  "in_channels": 1,
+  "nb_classes": 4,
+  "nb_filters": 32,
+  "depth": 6,
+  "kernel_size": 41,
+  "bottleneck_size": 32,
+  "use_residual": true,
+  "use_bottleneck": true,
+  "lr": 0.0001,
+  "average": "macro",
+  "standardize": true,
+  "use_weighted_sampler": false,
+  "seed": 42,
+  "precision": "32",
+  "fold": 5,
+  "all_metrics_test": {
+    "fold": 5,
+    "test_f1": 0.4093031585216522,
+    "test_loss": 130.37367248535156,
+    "test_precision": 0.3897522985935211,
+    "test_recall": 0.4376351237297058,
+    "test_accuracy": 0.6205357313156128,
+    "test_balanced_acc": 0.4376351237297058,
+    "test_kappa": 0.5072195529937744,
+    "log_dir": "result/Resnet34_hybrid_20260204-121218/fold_5/",
+    "best_ckpt": "result/Resnet34_hybrid_20260204-121218/fold_5/checkpoints/best-26-0.7066.ckpt"
+  }
+}
