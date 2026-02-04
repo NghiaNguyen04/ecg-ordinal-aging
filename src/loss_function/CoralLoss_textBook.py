@@ -84,7 +84,7 @@ class CoralLoss(nn.Module):
 
 
 @torch.no_grad()
-def coral_decode(logits: torch.Tensor, threshold: float = 0.6) -> torch.Tensor:
+def coral_decode(logits: torch.Tensor, threshold: float = 0.5) -> torch.Tensor:
     """
     Biến logits (B, K-1) -> nhãn dự đoán (B,)
     Quy tắc: đếm số sigmoid(logit_k) > threshold

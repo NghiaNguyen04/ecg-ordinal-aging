@@ -79,6 +79,7 @@ def load_model(args: argparse.Namespace, class_weights, y_train_np: np.ndarray =
             use_sex = args.use_sex,
         )
     elif args.model == "Resnet34_coralLoss":
+        print("Using CoralLoss")
         pw = coral_pos_weight_from_labels(y_train_np, num_classes=args.nb_classes)
         return ResNet1D_CoralLoss(
             in_channels=args.in_channels,
@@ -181,7 +182,6 @@ def train(args: argparse.Namespace):
             batch_size=args.batch_size,
             num_workers=args.num_workers,
         )
-
         # --- Model ---
         class_weights = dm.class_weights_tensor()
         model = load_model(args, class_weights, y_train_raw)
@@ -475,7 +475,7 @@ if __name__ == "__main__":
 # python src/run.py \
 #     --root-dir "data/processed/seg_300s/data_300s_order5.csv" \
 #     --dataset-name "data_300s_order5" \
-#     --model "Resnet34_FocalCos" \
+#     --model "Resnet34_hybrid" \
 #     --log-dir "result" \
 #     --batch-size 32 \
 #     --max-epochs 120 \

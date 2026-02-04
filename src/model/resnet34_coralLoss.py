@@ -64,7 +64,7 @@ class ResNet1D_CoralLoss(pl.LightningModule):
         nb_classes: int = 4,
         lr: float = 1e-4,
         weight_decay: float = 1e-4,
-        dropout: float = 0.2,
+        dropout: float = 0.5,
         sklearn_average: str = "macro",
         pos_weight: torch.Tensor | None = None,
         bmi_sex: bool = False,
@@ -88,8 +88,11 @@ class ResNet1D_CoralLoss(pl.LightningModule):
         in_feature = 256 + 20
         if self.bmi_sex:
             in_feature += 2
-        self.head = nn.Sequential(  # -> (B, 256)
+        self.head = nn.Sequential(    
             nn.Linear(in_feature, 1000),
+            nn.ReLU(inplace=True),
+            nn.Dropout(dropout),
+            nn.Linear(1000, 1000),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout),
             nn.Linear(1000, 1000),
