@@ -7,7 +7,7 @@ import pandas as pd
 from tqdm import tqdm
 import wfdb
 import neurokit2 as nk
-from scipy.interpolate import interp1d
+from scipy.interpolate import PchipInterpolator, interp1d
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import warnings
 import multiprocessing
@@ -65,24 +65,19 @@ def interpolate_rri(times_rri, rri, fs_interp=4.0, kind="quadratic"):
     # Lưới thời gian đều
     t_interp = np.arange(times_rri[0], times_rri[-1] + 1e-12, 1.0 / fs_interp)
 
-    # Nội suy "an toàn": không lỗi biên, điền bằng ngoại suy tuyến tính
-    f = interp1d(
-        times_rri, rri,
-        kind=kind,
-        bounds_error=False,
-        fill_value="extrapolate",
-        assume_sorted=True,
-    )
-    y = f(t_interp)
-
-    # Nếu còn NaN hiếm, điền tuyến tính ngắn
-    if np.any(~np.isfinite(y)):
-        # thay thế NaN bằng nội suy 1D đơn giản
-        good = np.isfinite(y)
-        if good.any():
-            y[~good] = np.interp(np.flatnonzero(~good), np.flatnonzero(good), y[good])
-        else:
-            return np.array([]), np.array([])
+    # Sử dụng PCHIP (Piecewise Cubic Hermite Interpolating Polynomial) 
+    # để đảm bảo tính đơn điệu cục bộ và TRÁNH overshoot/undershoot (gây ra giá trị âm)
+    try:
+        f = PchipInterpolator(times_rri, rri, extrapolate=True)
+        y = f(t_interp)
+        
+        # Kẹp giá trị (Clipping) trong khoảng sinh lý an toàn (300ms - 2000ms)
+        # Đây là chốt chặn cuối cùng để đảm bảo không có RRI âm hoặc quá lớn
+        y = np.clip(y, 0.3, 2.0)
+        
+    except Exception as e:
+        print(f"Interpolation error: {e}")
+        return np.array([]), np.array([])
 
     return t_interp, y
 
@@ -369,9 +364,9 @@ if __name__ == "__main__":
 #   --sbGroup-dir "./data/processed/Age_group_reduced.csv" `
 #   --subject-info-file "./data/raw/autonomic-aging-a-dataset/subject-info.csv" `
 #   --output-dir "./data/processed/seg_300s" `
-#   --max-workers 14 `
+#   --max-workers 12 `
 #   --window-sec 300 `
-#   --csv_name "data_300s_order5_2.csv"
+#   --csv_name "data_300s_order5_rmNegativeRRI.csv"
 
 
 
