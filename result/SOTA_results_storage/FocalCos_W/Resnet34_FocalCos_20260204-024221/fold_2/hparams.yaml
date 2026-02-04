@@ -1,0 +1,9 @@
+dropout: 0.5
+in_channels: 1
+lr: 0.0001
+nb_classes: 4
+sklearn_average: macro
+use_bmi: false
+use_sex: false
+use_uncertainty_weighting: true
+weight_decay: 0.0001

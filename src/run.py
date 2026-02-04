@@ -78,7 +78,7 @@ def load_model(args: argparse.Namespace, class_weights, y_train_np: np.ndarray =
             use_bmi = args.use_bmi,
             use_sex = args.use_sex,
         )
-    elif args.model == "Resnet34_coralLoss":
+    elif args.model == "Resnet34_coral":
         print("Using CoralLoss")
         pw = coral_pos_weight_from_labels(y_train_np, num_classes=args.nb_classes)
         return ResNet1D_CoralLoss(
@@ -97,6 +97,7 @@ def load_model(args: argparse.Namespace, class_weights, y_train_np: np.ndarray =
             sklearn_average=(None if args.average == "none" else args.average),
             use_bmi=args.use_bmi,
             use_sex=args.use_sex,
+            use_uncertainty_weighting=args.use_uncertainty_weighting,
         )
 
     return None
@@ -447,6 +448,7 @@ def main():
     parser.add_argument("--name", type=str, default=None)
     parser.add_argument("--patience", type=int, default=30)
     parser.add_argument("--resume-from", type=str, default=None)  # Sửa: resume_from -> resume-from
+    parser.add_argument("--use-uncertainty-weighting", action="store_true", help="Use uncertainty weighting")
 
     args = parser.parse_args()
     train(args)
@@ -456,8 +458,8 @@ if __name__ == "__main__":
 
 
 # dataset-name: AAGING_300s, AAGING_BMI_SEX, tfresh
-# model: InceptionTime, Resnet34, Resnet34_coralLoss,
-#       ConvTimeNet, ConvTimeNet_coralLoss, Resnet34_FocalCos
+# model: InceptionTime, Resnet34, Resnet34_coral,
+#       ConvTimeNet, ConvTimeNet_coral, Resnet34_FocalCos
 
 # python run.py `
 #     --root-dir "data/processed/seg_300s" `
@@ -475,11 +477,12 @@ if __name__ == "__main__":
 # python src/run.py \
 #     --root-dir "data/processed/seg_300s/data_300s_order5.csv" \
 #     --dataset-name "data_300s_order5" \
-#     --model "Resnet34_hybrid" \
+#     --model "Resnet34_FocalCos" \
 #     --log-dir "result" \
 #     --batch-size 32 \
 #     --max-epochs 120 \
-#     --n-splits 5
+#     --n-splits 5 \
+#     --use-uncertainty-weighting
 
 # python run.py `
 #     --root-dir "data/data_300s" `
