@@ -17,7 +17,8 @@ import torch
 import wandb
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
-from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger, CSVLogger
+from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import WandbLogger
 
 from model.resnet34_hybridLoss import ResNet1DLightning
 from model.resnet34_coralLoss import ResNet1D_CoralLoss
@@ -52,11 +53,19 @@ def coral_pos_weight_from_labels(y_train: np.ndarray, num_classes: int) -> torch
     return torch.tensor(weights, dtype=torch.float32)
 
 def load_dataset(args: argparse.Namespace):
-    data_ndarray = {}
-    if args.dataset_name == "AAGING_300s":
-        data_ndarray = AAGINGLoader(args.root_dir, seed=args.seed, use_bmi = args.use_bmi, use_sex = args.use_sex).load()
-
-    return data_ndarray
+    if args.dataset_name == "tfresh":
+        from data_provider.data_loader import TsfreshLoader
+        # tfresh vẫn dùng root_dir làm thư mục chứa nhiều file
+        return TsfreshLoader(args.root_dir, seed=args.seed).load()
+    
+    # Mặc định sử dụng AAGINGLoader, truyền thẳng đường dẫn file CSV từ root_dir
+    loader = AAGINGLoader(
+        csv_path=args.root_dir, 
+        seed=args.seed, 
+        use_bmi=args.use_bmi, 
+        use_sex=args.use_sex
+    )
+    return loader.load()
 
 def load_model(args: argparse.Namespace, class_weights, y_train_np: np.ndarray = None) -> pl.LightningModule:
     if args.model == "Resnet34_hybrid":
@@ -69,7 +78,8 @@ def load_model(args: argparse.Namespace, class_weights, y_train_np: np.ndarray =
             use_bmi = args.use_bmi,
             use_sex = args.use_sex,
         )
-    elif args.model == "Resnet34_coralLoss":
+    elif args.model == "Resnet34_coral":
+        print("Using CoralLoss")
         pw = coral_pos_weight_from_labels(y_train_np, num_classes=args.nb_classes)
         return ResNet1D_CoralLoss(
             in_channels=args.in_channels,
@@ -87,61 +97,10 @@ def load_model(args: argparse.Namespace, class_weights, y_train_np: np.ndarray =
             sklearn_average=(None if args.average == "none" else args.average),
             use_bmi=args.use_bmi,
             use_sex=args.use_sex,
+            use_uncertainty_weighting=args.use_uncertainty_weighting,
         )
 
     return None
-    
-def plot_training_history(log_dir: str, name: str):
-    """
-    Plots training and validation loss/f1 from metrics.csv and saves as PDF/PNG.
-    """
-    csv_path = Path(log_dir) / "metrics.csv"
-    if not csv_path.exists():
-        print(f"[WARN] Metrics file not found at {csv_path}")
-        return
-
-    try:
-        df = pd.read_csv(csv_path)
-        # CSVLogger logs train and val on different lines. Merge by epoch.
-        df_epoch = df.groupby("epoch").mean(numeric_only=True)
-        
-        if len(df_epoch) == 0:
-            return
-
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
-        
-        # 1. Loss Plot
-        if "train_loss" in df_epoch.columns:
-            ax1.plot(df_epoch.index, df_epoch["train_loss"], label="Train Loss", marker='o', markersize=3)
-        if "val_loss" in df_epoch.columns:
-            ax1.plot(df_epoch.index, df_epoch["val_loss"], label="Val Loss", marker='x', markersize=3)
-        ax1.set_title(f"Loss History - {name}")
-        ax1.set_xlabel("Epoch")
-        ax1.set_ylabel("Loss")
-        ax1.legend()
-        ax1.grid(True, linestyle='--', alpha=0.6)
-
-        # 2. F1-Score Plot
-        if "train_f1" in df_epoch.columns:
-            ax2.plot(df_epoch.index, df_epoch["train_f1"], label="Train F1", marker='o', markersize=3)
-        if "val_f1" in df_epoch.columns:
-            ax2.plot(df_epoch.index, df_epoch["val_f1"], label="Val F1", marker='x', markersize=3)
-        ax2.set_title(f"F1-Score History - {name}")
-        ax2.set_xlabel("Epoch")
-        ax2.set_ylabel("Macro F1")
-        ax2.legend()
-        ax2.grid(True, linestyle='--', alpha=0.6)
-
-        plt.tight_layout()
-        
-        pdf_path = Path(log_dir) / f"{name}_history.pdf"
-        png_path = Path(log_dir) / f"{name}_history.png"
-        plt.savefig(pdf_path)
-        plt.savefig(png_path)
-        plt.close(fig)
-        print(f"Exported training plots to {pdf_path}")
-    except Exception as e:
-        print(f"[ERROR] Failed to plot history for {name}: {e}")
 
 # -------------------- TRAIN FUNCTION --------------------
 def train(args: argparse.Namespace):
@@ -167,9 +126,11 @@ def train(args: argparse.Namespace):
         raise ValueError(f"fold_index phải trong [0, {args.n_splits-1}] hoặc = -1")
     selected_folds = range(args.n_splits) if args.fold_index == -1 else [args.fold_index]
 
-    # ---------- Tên run chung ----------
+    # ---------- Tên run chung & Base directory ----------
     run_timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     exp_name = args.name or f"{args.model}_{run_timestamp}"
+    base_exp_dir = os.path.join(args.log_dir, exp_name)
+    os.makedirs(base_exp_dir, exist_ok=True)
 
     all_metrics_test: List[Dict[str, float]] = []
     oof_rows: List[Dict[str, Any]] = []   # lưu tất cả VAL-preds của mọi folds
@@ -222,22 +183,21 @@ def train(args: argparse.Namespace):
             batch_size=args.batch_size,
             num_workers=args.num_workers,
         )
-
         # --- Model ---
         class_weights = dm.class_weights_tensor()
         model = load_model(args, class_weights, y_train_raw)
 
         # --- Logger ---
-        exp_name_fold = f"{exp_name}_fold{fold_idx+1}"
-        logger_tb = TensorBoardLogger(save_dir=args.log_dir, name=exp_name_fold, default_hp_metric=False)
-        logger_csv = CSVLogger(save_dir=args.log_dir, name=exp_name_fold)
-        logger = [logger_tb, logger_csv]
+        fold_name = f"fold_{fold_idx+1}"
+        logger_tb = TensorBoardLogger(save_dir=base_exp_dir, name=fold_name, version="", default_hp_metric=False)
         if args.use_wandb:
-            logger_wandb = WandbLogger(project="ECG_Classification_PL", name=exp_name_fold)
-            logger.append(logger_wandb)
+            logger_wandb = WandbLogger(project="ECG_Classification_PL", name=f"{exp_name}_{fold_name}")
+            logger = [logger_tb, logger_wandb]
+        else:
+            logger = [logger_tb]
 
-        # --- Callbacks: theo dõi val_f1 ---
-        monitor_metric = "val_f1"
+        # --- Callbacks: theo dõi val_kappa ---
+        monitor_metric = "val_kappa"
         ckpt = ModelCheckpoint(
             monitor=monitor_metric,
             mode="max",
@@ -262,9 +222,6 @@ def train(args: argparse.Namespace):
 
         # --- Fit ---
         trainer.fit(model, datamodule=dm, ckpt_path=args.resume_from or None)
-
-        # --- Plot Training History ---
-        plot_training_history(logger_csv.log_dir, exp_name_fold)
 
         # --- test ở best checkpoint ---
         best_path = ckpt.best_model_path or None
@@ -362,7 +319,7 @@ def train(args: argparse.Namespace):
             }
             print(f"{c}: {mu:.4f} ± {sd:.4f}")
 
-    cv_oof_cm_dir = os.path.join(args.log_dir, f"{args.model}", f"_{run_timestamp}")
+    cv_oof_cm_dir = base_exp_dir
     os.makedirs(cv_oof_cm_dir, exist_ok=True)
 
     cv_stats_path = os.path.join(cv_oof_cm_dir, f"{exp_name}_cv_stats.json")
@@ -491,6 +448,7 @@ def main():
     parser.add_argument("--name", type=str, default=None)
     parser.add_argument("--patience", type=int, default=30)
     parser.add_argument("--resume-from", type=str, default=None)  # Sửa: resume_from -> resume-from
+    parser.add_argument("--use-uncertainty-weighting", action="store_true", help="Use uncertainty weighting")
 
     args = parser.parse_args()
     train(args)
@@ -500,13 +458,13 @@ if __name__ == "__main__":
 
 
 # dataset-name: AAGING_300s, AAGING_BMI_SEX, tfresh
-# model: InceptionTime, Resnet34, Resnet34_coralLoss,
-#       ConvTimeNet, ConvTimeNet_coralLoss, Resnet34_FocalCos
+# model: InceptionTime, Resnet34, Resnet34_coral,
+#       ConvTimeNet, ConvTimeNet_coral, Resnet34_FocalCos
 
 # python run.py `
-#     --root-dir "data/data_300s" `
-#     --dataset-name "AAGING_300s" `
-#     --model "Resnet34_FocalCos" `
+#     --root-dir "data/processed/seg_300s" `
+#     --dataset-name "data_300s_order5" `
+#     --model "Resnet34_hybrid" `
 #     --log-dir "result" `
 #     --batch-size 32 `
 #     --max-epochs 2 `
@@ -516,9 +474,21 @@ if __name__ == "__main__":
 #     --use-wandb
 #
 
+# python src/run.py \
+#     --root-dir "data/processed/seg_300s/data_300s_order5_rmNegativeRRI.csv" \
+#     --dataset-name "data_300s_order5" \
+#     --model "Resnet34_hybrid" \
+#     --log-dir "result" \
+#     --batch-size 16 \
+#     --max-epochs 120 \
+#     --n-splits 5 \
+#     --use-bmi \
+#     --use-sex
+
+#     --use-uncertainty-weighting
+
 # python run.py `
 #     --root-dir "data/data_300s" `
-#     --dataset-name "AAGING_300s" `
 #     --model "Resnet34" `
 #     --log-dir "result" `
 #     --max-epochs 150 `
@@ -537,13 +507,3 @@ if __name__ == "__main__":
 #     --max-epochs 150 `
 #     --use-bmi-sex `
 #     --n-splits 5
-
-# python run.py `
-#     --root-dir "data/tsfresh" `
-#     --dataset-name "tfresh" `
-#     --model "InceptionTime" `
-#     --log-dir "result" `
-#     --batch-size 64 `
-#     --n-splits 1 `
-#     --max-epochs 100 `
-#     --lr 1e-4 `

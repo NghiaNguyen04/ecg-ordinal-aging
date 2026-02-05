@@ -42,7 +42,7 @@ class HybridLoss(nn.Module):
     - y_reg: median tuổi của lớp thật
     - y_hat_reg: tuổi dự đoán (kỳ vọng theo probs @ medians)
     """
-    def __init__(self, class_medians=(24, 35, 44, 55),
+    def __init__(self, class_medians=(22.0, 32.0, 44.5, 62.0),
                  class_weights=None, beta=1.0):
         super().__init__()
         self.beta = float(beta)
