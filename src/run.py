@@ -1,6 +1,6 @@
 import warnings
-from pydantic._internal._generate_schema import UnsupportedFieldAttributeWarning
-warnings.filterwarnings("ignore", category=UnsupportedFieldAttributeWarning)
+# from pydantic._internal._generate_schema import UnsupportedFieldAttributeWarning
+# warnings.filterwarnings("ignore", category=UnsupportedFieldAttributeWarning)
 
 
 import os, re
@@ -102,6 +102,70 @@ def load_model(args: argparse.Namespace, class_weights, y_train_np: np.ndarray =
 
     return None
 
+class MetricHistoryCallback(pl.Callback):
+    def __init__(self):
+        super().__init__()
+        self.history = {"train_loss": [], "val_loss": [], "train_f1": [], "val_f1": [], "val_kappa": []}
+
+    def on_train_epoch_end(self, trainer, pl_module):
+        # Lấy metrics từ trainer.callback_metrics (đã được log)
+        metrics = trainer.callback_metrics
+        if "train_loss" in metrics:
+            self.history["train_loss"].append(metrics["train_loss"].item())
+        if "train_f1" in metrics:
+            self.history["train_f1"].append(metrics["train_f1"].item())
+
+    def on_validation_epoch_end(self, trainer, pl_module):
+        metrics = trainer.callback_metrics
+        if "val_loss" in metrics:
+            self.history["val_loss"].append(metrics["val_loss"].item())
+        if "val_f1" in metrics:
+            self.history["val_f1"].append(metrics["val_f1"].item())
+        if "val_kappa" in metrics:
+            self.history["val_kappa"].append(metrics["val_kappa"].item())
+
+def plot_metrics(history: Dict[str, List[float]], save_dir: str):
+    epochs = range(1, len(history["train_loss"]) + 1)
+    
+    # Plot Loss
+    plt.figure(figsize=(10, 5))
+    if history["train_loss"]:
+        plt.plot(epochs, history["train_loss"], label='Train Loss')
+    # Valid loss có thể ít hơn 1 epoch nếu sanity check
+    val_epochs = range(1, len(history["val_loss"]) + 1)
+    if history["val_loss"]:
+        plt.plot(val_epochs, history["val_loss"], label='Val Loss')
+    plt.title('Loss over Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.savefig(os.path.join(save_dir, 'loss_curve.png'))
+    plt.close()
+
+    # Plot F1
+    plt.figure(figsize=(10, 5))
+    if history["train_f1"]:
+        plt.plot(epochs, history["train_f1"], label='Train F1')
+    if history["val_f1"]:
+        plt.plot(val_epochs, history["val_f1"], label='Val F1')
+    plt.title('F1 Score over Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('F1 Score')
+    plt.legend()
+    plt.savefig(os.path.join(save_dir, 'f1_curve.png'))
+    plt.close()
+    
+    # Plot Kappa
+    plt.figure(figsize=(10, 5))
+    if history["val_kappa"]:
+        plt.plot(val_epochs, history["val_kappa"], label='Val Kappa')
+    plt.title('Kappa over Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Kappa')
+    plt.legend()
+    plt.savefig(os.path.join(save_dir, 'kappa_curve.png'))
+    plt.close()
+
 # -------------------- TRAIN FUNCTION --------------------
 def train(args: argparse.Namespace):
 
@@ -182,6 +246,7 @@ def train(args: argparse.Namespace):
             use_weighted_sampler=args.use_weighted_sampler,
             batch_size=args.batch_size,
             num_workers=args.num_workers,
+            seed=args.seed,
         )
         # --- Model ---
         class_weights = dm.class_weights_tensor()
@@ -207,21 +272,26 @@ def train(args: argparse.Namespace):
         )
         early = EarlyStopping(monitor=monitor_metric, mode="max", patience=args.patience)
         lrmon = LearningRateMonitor(logging_interval="epoch")
+        history_cb = MetricHistoryCallback()
 
         trainer = pl.Trainer(
             max_epochs=args.max_epochs,
             accelerator="auto",
             devices="auto",
             precision=args.precision,
-            callbacks=[ckpt, early, lrmon],
+            callbacks=[ckpt, early, lrmon, history_cb],
             logger=logger,
             log_every_n_steps=5,
-            deterministic=False,
+            deterministic=True,
             inference_mode=False,
         )
 
         # --- Fit ---
         trainer.fit(model, datamodule=dm, ckpt_path=args.resume_from or None)
+        
+        # --- Vẽ biểu đồ sau khi train xong ---
+        plot_metrics(history_cb.history, logger[0].log_dir)
+        print(f"Saved metric plots to: {logger[0].log_dir}")
 
         # --- test ở best checkpoint ---
         best_path = ckpt.best_model_path or None

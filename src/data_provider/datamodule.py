@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 import torch
+import random
 from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 import pytorch_lightning as pl
 from data_provider.data_loader import AAGINGLoader
@@ -72,6 +73,7 @@ class TSDataModule(pl.LightningDataModule):
         pin_memory: bool = True,
         persistent_workers: bool = True,
         x_dtype: torch.dtype = torch.float32,
+        seed: int = 42,
     ) -> None:
         super().__init__()
 
@@ -83,6 +85,7 @@ class TSDataModule(pl.LightningDataModule):
         self.pin_memory = pin_memory
         self.persistent_workers = persistent_workers
         self.x_dtype = x_dtype
+        self.seed = seed
 
         # store numpy arrays; convert/normalize in setup()
         self._X_train = self._ensure_3d(X_train)
@@ -101,6 +104,15 @@ class TSDataModule(pl.LightningDataModule):
         self._mean: Optional[np.ndarray] = None  # (1, C, 1)
         self._std: Optional[np.ndarray] = None   # (1, C, 1)
         self._class_counts: Optional[np.ndarray] = None
+
+    def _worker_init_fn(self, worker_id):
+        # Set seed for each worker process
+        seed = self.seed + worker_id
+        np.random.seed(seed)
+        random.seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
     # ------------------------ public helpers ------------------------
 
     def channel_stats(self) -> Optional[Tuple[np.ndarray, np.ndarray]]:
@@ -183,6 +195,7 @@ class TSDataModule(pl.LightningDataModule):
                 num_workers=self.num_workers,
                 pin_memory=self.pin_memory,
                 persistent_workers=self.persistent_workers if self.num_workers > 0 else False,
+                worker_init_fn=self._worker_init_fn,
             )
         else:
             return DataLoader(
@@ -191,6 +204,7 @@ class TSDataModule(pl.LightningDataModule):
                 shuffle=True,
                 num_workers=self.num_workers,
                 pin_memory=self.pin_memory,
+                worker_init_fn=self._worker_init_fn,
                 persistent_workers=self.persistent_workers if self.num_workers > 0 else False,
             )
 
