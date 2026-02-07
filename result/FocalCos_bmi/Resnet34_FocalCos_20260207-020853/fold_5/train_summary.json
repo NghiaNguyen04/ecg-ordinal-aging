@@ -1,0 +1,33 @@
+{
+  "best_ckpt": "result/FocalCos_bmi/Resnet34_FocalCos_20260207-020853/fold_5/checkpoints/best-24-0.6834.ckpt",
+  "monitor": "val_kappa",
+  "patience": 30,
+  "log_dir": "result/FocalCos_bmi/Resnet34_FocalCos_20260207-020853/fold_5/",
+  "in_channels": 1,
+  "nb_classes": 4,
+  "nb_filters": 32,
+  "depth": 6,
+  "kernel_size": 41,
+  "bottleneck_size": 32,
+  "use_residual": true,
+  "use_bottleneck": true,
+  "lr": 0.0001,
+  "average": "macro",
+  "standardize": true,
+  "use_weighted_sampler": false,
+  "seed": 42,
+  "precision": "32",
+  "fold": 5,
+  "all_metrics_test": {
+    "fold": 5,
+    "test_f1": 0.4037003517150879,
+    "test_loss": 0.31259584426879883,
+    "test_precision": 0.4027697741985321,
+    "test_recall": 0.41841939091682434,
+    "test_accuracy": 0.5625,
+    "test_balanced_acc": 0.41841939091682434,
+    "test_kappa": 0.5218520164489746,
+    "log_dir": "result/FocalCos_bmi/Resnet34_FocalCos_20260207-020853/fold_5/",
+    "best_ckpt": "result/FocalCos_bmi/Resnet34_FocalCos_20260207-020853/fold_5/checkpoints/best-24-0.6834.ckpt"
+  }
+}

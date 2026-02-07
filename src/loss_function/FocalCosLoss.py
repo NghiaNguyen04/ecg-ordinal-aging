@@ -20,7 +20,7 @@ class FocalCosLoss(nn.Module):
     """
 
     def __init__(self,
-                 class_medians=(24, 35, 44, 55),
+                 class_medians=(22.0, 32.0, 44.5, 62.0),
                  class_weights=None,
                  gamma=2.0,
                  lambda_ce=1.0,
@@ -108,4 +108,15 @@ class FocalCosLoss(nn.Module):
             self.beta        * mse_loss
         )
 
-        return total_loss
+        logs_dict = {
+            "loss_ce_raw": ce_loss,
+            "loss_focal_raw": focal_loss,
+            "loss_cos_raw": cosine_loss,
+            "loss_age_raw": mse_loss,
+            "loss_ce_weighted": self.lambda_ce * ce_loss,
+            "loss_focal_weighted": self.lambda_focal * focal_loss,
+            "loss_cos_weighted": self.lambda_cos * cosine_loss,
+            "loss_age_weighted": self.beta * mse_loss,
+        }
+
+        return total_loss, logs_dict

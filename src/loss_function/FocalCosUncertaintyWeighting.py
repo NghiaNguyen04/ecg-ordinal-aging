@@ -3,10 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class FocalCos(nn.Module):
+class FocalCosUncertaintyWeighting(nn.Module):
     """
     Multi-task Learning using Uncertainty to weigh losses:
-    L_total = sum( 0.5 * exp(-s_i) * L_i + 0.5 * s_i )
+    L_total = sum( 0.5 * exp(-s_i) * L_i + 0.5 * s_i )S
     
     Components:
     1. Weighted CrossEntropy
@@ -18,13 +18,13 @@ class FocalCos(nn.Module):
     """
 
     def __init__(self,
-                 class_medians=(24, 35, 44, 55),
+                 class_medians=(22.0, 32.0, 44.5, 62.0),
                  class_weights=None,
                  gamma=2.0):
         super().__init__()
 
         self.gamma = float(gamma)
-
+        class_medians = [x/100 for x in class_medians]
         # medians: [C]
         self.register_buffer(
             "medians",

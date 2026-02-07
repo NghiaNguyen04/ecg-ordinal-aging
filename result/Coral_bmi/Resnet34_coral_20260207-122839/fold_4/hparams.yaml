@@ -1,0 +1,9 @@
+bmi_sex: false
+dropout: 0.5
+in_channels: 1
+lr: 0.0001
+nb_classes: 4
+pos_weight: null
+sklearn_average: macro
+threshold: 0.5
+weight_decay: 0.0001

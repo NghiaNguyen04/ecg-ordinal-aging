@@ -10,6 +10,7 @@ import pytorch_lightning as pl
 from collections import defaultdict
 from torchmetrics.classification import MulticlassAccuracy, MulticlassF1Score
 from loss_function.FocalCosLoss import FocalCosLoss
+from loss_function.FocalCosUncertaintyWeighting import FocalCosUncertaintyWeighting
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import (
     balanced_accuracy_score,
@@ -67,11 +68,12 @@ class ResNet1D_FocalCos(pl.LightningModule):
         nb_classes: int = 4,
         lr: float = 1e-4,
         weight_decay: float = 1e-4,
-        dropout: float = 0.2,
+        dropout: float = 0.5,
         class_weights: Optional[torch.Tensor] = None,
         sklearn_average: str = "macro",
         use_bmi: bool = False,
         use_sex: bool = False,
+        use_uncertainty_weighting: bool = False,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["class_weights"])
@@ -95,8 +97,12 @@ class ResNet1D_FocalCos(pl.LightningModule):
             in_feature += 2
         elif self.use_bmi or self.use_sex:
             in_feature += 1
-        self.head = nn.Sequential(             # -> (B, 256)
+
+        self.head = nn.Sequential(    
             nn.Linear(in_feature, 1000),
+            nn.ReLU(inplace=True),
+            nn.Dropout(dropout),
+            nn.Linear(1000, 1000),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout),
             nn.Linear(1000, 1000),
@@ -104,14 +110,20 @@ class ResNet1D_FocalCos(pl.LightningModule):
             nn.Dropout(dropout),
             nn.Linear(1000, nb_classes),
         )
+
         self.nb_classes = nb_classes
         # Loss & metrics
         if class_weights is not None:
             self.register_buffer("class_weights", class_weights)
         else:
             self.class_weights = None
-
-        self.criterion = FocalCosLoss(class_weights=class_weights)
+        
+        if use_uncertainty_weighting:
+            print("Using FocalCosUncertaintyWeighting")
+            self.criterion = FocalCosUncertaintyWeighting(class_weights=class_weights)
+        else:
+            print("Using FocalCosLoss")
+            self.criterion = FocalCosLoss(class_weights=class_weights)
 
         self.acc = MulticlassAccuracy(num_classes=nb_classes, average="macro")
         self.f1  = MulticlassF1Score(num_classes=nb_classes, average="macro")
@@ -159,15 +171,19 @@ class ResNet1D_FocalCos(pl.LightningModule):
     def training_step(self, batch, batch_idx: int):
         x, y = batch
         logits = self(x)
-        loss = self.criterion(logits, y)
+        loss_out = self.criterion(logits, y)
+
+        if isinstance(loss_out, tuple):
+            loss, logs = loss_out
+            for k, v in logs.items():
+                self.log(f"train_{k}", v, on_step=False, on_epoch=True)
+        else:
+            loss = loss_out
+
         preds = logits.argmax(dim=1)
         acc = (preds == y).float().mean()
-        
-        # Log metrics
-        self.f1(preds, y)
         self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("train_acc", acc, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("train_f1", self.f1, on_step=False, on_epoch=True, prog_bar=True)
         return loss
 
     def on_validation_epoch_start(self) -> None:
@@ -176,7 +192,15 @@ class ResNet1D_FocalCos(pl.LightningModule):
     def validation_step(self, batch, batch_idx: int):
         x, y = batch
         logits = self(x)
-        loss = self.criterion(logits, y)
+        loss_out = self.criterion(logits, y)
+
+        if isinstance(loss_out, tuple):
+            loss, logs = loss_out
+            for k, v in logs.items():
+                self.log(f"val_{k}", v, on_step=False, on_epoch=True)
+        else:
+            loss = loss_out
+
         preds = logits.argmax(dim=1)
         acc = (preds == y).float().mean()
         self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
@@ -210,7 +234,15 @@ class ResNet1D_FocalCos(pl.LightningModule):
     def test_step(self, batch, batch_idx: int):
         x, y = batch
         logits = self(x)
-        loss = self.criterion(logits, y)
+        loss_out = self.criterion(logits, y)
+
+        if isinstance(loss_out, tuple):
+            loss, logs = loss_out
+            for k, v in logs.items():
+                self.log(f"test_{k}", v, on_step=False, on_epoch=True)
+        else:
+            loss = loss_out
+
         preds = logits.argmax(dim=1)
         self.log("test_loss", loss, on_step=False, on_epoch=True)
         self._test_pred.append(preds.detach().cpu())
@@ -266,4 +298,3 @@ class ResNet1D_FocalCos(pl.LightningModule):
             "optimizer": optim,
             "lr_scheduler": {"scheduler": sched, "monitor": "val_loss", "interval": "epoch", "frequency": 1},
         }
-

@@ -23,6 +23,8 @@ from pytorch_lightning.loggers import WandbLogger
 from model.resnet34_hybridLoss import ResNet1DLightning
 from model.resnet34_coralLoss import ResNet1D_CoralLoss
 from model.resnet34_FocalCosLoss import ResNet1D_FocalCos
+from model.optimize_threshold import find_optimal_threshold
+
 
 from data_provider.datamodule import TSDataModule
 from data_provider.data_loader import AAGINGLoader
@@ -35,22 +37,22 @@ torch.set_float32_matmul_precision('high')
 
 # ------------------------------- utilities -------------------------------
 
-def coral_pos_weight_from_labels(y_train: np.ndarray, num_classes: int) -> torch.Tensor:
-    """
-    y_train: (N,), integer [0..K-1]
-    trả về tensor (K-1,) trên CPU (.to(device) sau)
-    pos_weight_k = N_neg_k / N_pos_k với nhãn nhị phân 1[y>k]
-    """
-    K = num_classes
-    weights = []
-    for k in range(K-1):
-        pos = (y_train > k).sum()
-        neg = (y_train <= k).sum()
-        # tránh chia 0
-        pos = max(pos, 1)
-        neg = max(neg, 1)
-        weights.append(neg / pos)
-    return torch.tensor(weights, dtype=torch.float32)
+# def coral_pos_weight_from_labels(y_train: np.ndarray, num_classes: int) -> torch.Tensor:
+#     """
+#     y_train: (N,), integer [0..K-1]
+#     trả về tensor (K-1,) trên CPU (.to(device) sau)
+#     pos_weight_k = N_neg_k / N_pos_k với nhãn nhị phân 1[y>k]
+#     """
+#     K = num_classes
+#     weights = []
+#     for k in range(K-1):
+#         pos = (y_train > k).sum()
+#         neg = (y_train <= k).sum()
+#         # tránh chia 0
+#         pos = max(pos, 1)
+#         neg = max(neg, 1)
+#         weights.append(neg / pos)
+#     return torch.tensor(weights, dtype=torch.float32)
 
 def load_dataset(args: argparse.Namespace):
     if args.dataset_name == "tfresh":
@@ -80,13 +82,15 @@ def load_model(args: argparse.Namespace, class_weights, y_train_np: np.ndarray =
         )
     elif args.model == "Resnet34_coral":
         print("Using CoralLoss")
-        pw = coral_pos_weight_from_labels(y_train_np, num_classes=args.nb_classes)
+        # pw = coral_pos_weight_from_labels(y_train_np, num_classes=args.nb_classes)
         return ResNet1D_CoralLoss(
             in_channels=args.in_channels,
             nb_classes=args.nb_classes,
             lr=args.lr,
             sklearn_average=(None if args.average == "none" else args.average),
-            pos_weight=pw.to(args.device),
+            # pos_weight=pw.to(args.device),
+            pos_weight=None,
+            threshold=args.threshold,
         )
     elif args.model == "Resnet34_FocalCos":
         return ResNet1D_FocalCos(
@@ -125,15 +129,14 @@ class MetricHistoryCallback(pl.Callback):
             self.history["val_kappa"].append(metrics["val_kappa"].item())
 
 def plot_metrics(history: Dict[str, List[float]], save_dir: str):
-    epochs = range(1, len(history["train_loss"]) + 1)
     
     # Plot Loss
     plt.figure(figsize=(10, 5))
     if history["train_loss"]:
+        epochs = range(1, len(history["train_loss"]) + 1)
         plt.plot(epochs, history["train_loss"], label='Train Loss')
-    # Valid loss có thể ít hơn 1 epoch nếu sanity check
-    val_epochs = range(1, len(history["val_loss"]) + 1)
     if history["val_loss"]:
+        val_epochs = range(1, len(history["val_loss"]) + 1)
         plt.plot(val_epochs, history["val_loss"], label='Val Loss')
     plt.title('Loss over Epochs')
     plt.xlabel('Epochs')
@@ -145,8 +148,10 @@ def plot_metrics(history: Dict[str, List[float]], save_dir: str):
     # Plot F1
     plt.figure(figsize=(10, 5))
     if history["train_f1"]:
+        epochs = range(1, len(history["train_f1"]) + 1)
         plt.plot(epochs, history["train_f1"], label='Train F1')
     if history["val_f1"]:
+        val_epochs = range(1, len(history["val_f1"]) + 1)
         plt.plot(val_epochs, history["val_f1"], label='Val F1')
     plt.title('F1 Score over Epochs')
     plt.xlabel('Epochs')
@@ -158,6 +163,7 @@ def plot_metrics(history: Dict[str, List[float]], save_dir: str):
     # Plot Kappa
     plt.figure(figsize=(10, 5))
     if history["val_kappa"]:
+        val_epochs = range(1, len(history["val_kappa"]) + 1)
         plt.plot(val_epochs, history["val_kappa"], label='Val Kappa')
     plt.title('Kappa over Epochs')
     plt.xlabel('Epochs')
@@ -293,10 +299,43 @@ def train(args: argparse.Namespace):
         plot_metrics(history_cb.history, logger[0].log_dir)
         print(f"Saved metric plots to: {logger[0].log_dir}")
 
+        # --- Threshold Optimization (for Coral Loss) ---
+        optimal_threshold = args.threshold  # Default
+        if "coral" in args.model.lower():
+            print("Finding optimal threshold on validation set...")
+            # Load best model
+            best_model = load_model(args, class_weights, y_train_raw)
+            checkpoint = torch.load(ckpt.best_model_path, map_location=args.device)
+            best_model.load_state_dict(checkpoint['state_dict'])
+            best_model.to(args.device)
+            best_model.eval()
+
+            # Create Val Dataloader (reusing dm setup)
+            val_dls = dm.val_dataloader()
+            optimal_threshold = find_optimal_threshold(best_model, val_dls, args.device)
+            print(f"Optimal Threshold found: {optimal_threshold:.4f}")
+
+            # Update model threshold
+            model.threshold = optimal_threshold
+            # Also update best_model if we use it later directly (though pl loads from ckpt usually)
+            # We need to make sure 'model' passed to test/predict has the new threshold.
+            # Since trainer.test loads from ckpt, we might need to override.
+            # Actually, standard PL trainer.test loads from ckpt which HAS OLD THRESHOLD.
+            # So we should pass the loaded model with updated threshold.
+            
+            # Since we loaded best_model above, let's use it.
+            best_model.threshold = optimal_threshold
+            model = best_model # Switch reference to the loaded best model
+
         # --- test ở best checkpoint ---
-        best_path = ckpt.best_model_path or None
+        # Note: ckpt_path=None because we pass the loaded 'model' which has the NEW numeric threshold
+        # If we pass ckpt_path, PL reloads weights AND hparams, potentially resetting threshold if it was saved.
+        # But 'threshold' is a hparam. So reloading ckpt will reset it to 0.5.
+        # We must use the 'model' object directly and NO ckpt_path to use the modification.
+        
         test_dls = dm.test_dataloader()
-        trainer.test(model=model, dataloaders=test_dls, ckpt_path=best_path)
+        trainer.test(model=model, dataloaders=test_dls, ckpt_path=None) 
+
 
         # --- Lấy metrics (test) ---
         cb = trainer.callback_metrics
@@ -315,8 +354,10 @@ def train(args: argparse.Namespace):
         all_metrics_test.append(m_test)
 
         # --- Predict OOF (test) bằng best checkpoint ---
-        model.eval()
-        preds = trainer.predict(model, dataloaders=test_dls, ckpt_path=best_path)
+        # model.eval() # Trainer handles this
+        # Pass model directly to preserve the updated threshold
+        preds = trainer.predict(model, dataloaders=test_dls, ckpt_path=None)
+
 
         flat = []
         for item in preds:
@@ -360,6 +401,7 @@ def train(args: argparse.Namespace):
             "seed": args.seed,
             "precision": args.precision,
             "fold": fold_idx + 1,
+            "optimal_threshold": float(optimal_threshold) if "coral" in args.model.lower() else None,
             "all_metrics_test": m_test,
         }
         with open(os.path.join(logger[0].log_dir, "train_summary.json"), "w", encoding="utf-8") as fp:
@@ -519,61 +561,10 @@ def main():
     parser.add_argument("--patience", type=int, default=30)
     parser.add_argument("--resume-from", type=str, default=None)  # Sửa: resume_from -> resume-from
     parser.add_argument("--use-uncertainty-weighting", action="store_true", help="Use uncertainty weighting")
+    parser.add_argument("--threshold", type=float, default=0.5, help="Decision threshold for Coral Loss (default: 0.5)")
 
     args = parser.parse_args()
     train(args)
 
 if __name__ == "__main__":
     main()
-
-
-# dataset-name: AAGING_300s, AAGING_BMI_SEX, tfresh
-# model: InceptionTime, Resnet34, Resnet34_coral,
-#       ConvTimeNet, ConvTimeNet_coral, Resnet34_FocalCos
-
-# python run.py `
-#     --root-dir "data/processed/seg_300s" `
-#     --dataset-name "data_300s_order5" `
-#     --model "Resnet34_hybrid" `
-#     --log-dir "result" `
-#     --batch-size 32 `
-#     --max-epochs 2 `
-#     --n-splits 5
-
-#     --lr 1e-4 `
-#     --use-wandb
-#
-
-# python src/run.py \
-#     --root-dir "data/processed/seg_300s/data_300s_order5_rmNegativeRRI.csv" \
-#     --dataset-name "data_300s_order5" \
-#     --model "Resnet34_hybrid" \
-#     --log-dir "result" \
-#     --batch-size 16 \
-#     --max-epochs 120 \
-#     --n-splits 5 \
-#     --use-bmi \
-#     --use-sex
-
-#     --use-uncertainty-weighting
-
-# python run.py `
-#     --root-dir "data/data_300s" `
-#     --model "Resnet34" `
-#     --log-dir "result" `
-#     --max-epochs 150 `
-#     --n-splits 5 `
-#     --use-bmi `
-#     --use-sex
-#     --oversampling "None"
-
-
-# python run.py `
-#     --root-dir "data/data_300s" `
-#     --dataset-name "AAGING_300s" `
-#     --model "ConvTimeNet" `
-#     --log-dir "result" `
-#     --batch-size 64 `
-#     --max-epochs 150 `
-#     --use-bmi-sex `
-#     --n-splits 5

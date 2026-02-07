@@ -64,10 +64,11 @@ class ResNet1D_CoralLoss(pl.LightningModule):
         nb_classes: int = 4,
         lr: float = 1e-4,
         weight_decay: float = 1e-4,
-        dropout: float = 0.2,
+        dropout: float = 0.5,
         sklearn_average: str = "macro",
         pos_weight: torch.Tensor | None = None,
         bmi_sex: bool = False,
+        threshold: float = 0.5,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -75,6 +76,7 @@ class ResNet1D_CoralLoss(pl.LightningModule):
         self.weight_decay = weight_decay
         self.sklearn_average = sklearn_average
         self.bmi_sex = bmi_sex
+        self.threshold = threshold
 
         self.stem = ConvBlock(in_channels, 64)
 
@@ -90,6 +92,9 @@ class ResNet1D_CoralLoss(pl.LightningModule):
             in_feature += 2
         self.head = nn.Sequential(  # -> (B, 256)
             nn.Linear(in_feature, 1000),
+            nn.ReLU(inplace=True),
+            nn.Dropout(dropout),
+            nn.Linear(1000, 1000),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout),
             nn.Linear(1000, 1000),
@@ -145,7 +150,7 @@ class ResNet1D_CoralLoss(pl.LightningModule):
         logits = self(x)
         y_ord = coral_encode_targets(y, self.nb_classes)  # (B, K-1)
         loss = self.criterion(logits, y_ord)
-        preds = coral_decode(logits)  # (B,)
+        preds = coral_decode(logits, threshold=self.threshold)  # (B,)
 
         acc = (preds == y).float().mean()
         self.f1(preds, y)
@@ -162,7 +167,7 @@ class ResNet1D_CoralLoss(pl.LightningModule):
         logits = self(x)
         y_ord = coral_encode_targets(y, self.nb_classes)  # (B, K-1)
         loss = self.criterion(logits, y_ord)
-        preds = coral_decode(logits)  # (B,)
+        preds = coral_decode(logits, threshold=self.threshold)  # (B,)
 
         acc = (preds == y).float().mean()
         self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
@@ -198,7 +203,7 @@ class ResNet1D_CoralLoss(pl.LightningModule):
         logits = self(x)
         y_ord = coral_encode_targets(y, self.nb_classes)  # (B, K-1)
         loss = self.criterion(logits, y_ord)
-        preds = coral_decode(logits)  # (B,)
+        preds = coral_decode(logits, threshold=self.threshold)  # (B,)
 
         self.log("test_loss", loss, on_step=False, on_epoch=True)
         self._test_pred.append(preds.detach().cpu())
@@ -230,7 +235,7 @@ class ResNet1D_CoralLoss(pl.LightningModule):
     def predict_step(self, batch, batch_idx, dataloader_idx: int = 0):
         x, y_true = batch
         logits = self(x)
-        preds = coral_decode(logits)  # (B,)
+        preds = coral_decode(logits, threshold=self.threshold)  # (B,)
 
         return {
                 "y_pred": preds.detach().cpu().numpy(),

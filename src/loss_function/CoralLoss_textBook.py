@@ -10,46 +10,29 @@ import torch.nn.functional as F
 
 
 class CoralHead(nn.Module):
-    """
-    CORAL:
-    - 1 vector trọng số chung w: R^d -> R (linear score g(x))
-    - K-1 ngưỡng (threshold) θ_k tăng dần: θ_0 < θ_1 < ... < θ_{K-2}
-    - Logit cho câu hỏi 'y > k ?' = g(x) - θ_k
-    """
     def __init__(self, in_features: int, num_classes: int):
         super().__init__()
-        assert num_classes >= 2
-        self.num_classes = num_classes
+        self.linear = nn.Linear(in_features, 1, bias=False)
+        # theta_0: tham số tự do đầu tiên
+        self.bias_0 = nn.Parameter(torch.zeros(1))
+        # diffs: khoảng cách giữa các ngưỡng tiếp theo (K-2 khoảng)
+        self.diffs_raw = nn.Parameter(torch.zeros(num_classes - 2))
 
-        # Linear chung, không bias (bias sẽ nằm trong các threshold)
-        self.linear = nn.Linear(in_features, 1, bias=False)  # w
-
-        # Tham số "raw" cho chênh lệch giữa các threshold
-        # shape: (K-1,)
-        # Ta sẽ biến nó thành các khoảng dương bằng softplus,
-        # rồi cộng dồn để đảm bảo θ_0 < θ_1 < ... < θ_{K-2}
-        self.theta_raw = nn.Parameter(torch.zeros(num_classes - 1))
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        x: (B, in_features)
-        return logits: (B, K-1), mỗi cột là logit[y > k]
-        """
-        g = self.linear(x)  # (B, 1), cùng score cho mọi ngưỡng
-
-        # Chuyển theta_raw thành các "khoảng dương"
-        diffs = F.softplus(self.theta_raw)  # (K-1,), > 0
-
-        # Tính threshold tăng dần
-        # θ_0 = diff_0
-        # θ_1 = diff_0 + diff_1
-        # ...
-        thresholds = torch.cumsum(diffs, dim=0)  # (K-1,)
-
-        # Broadcast để trừ: (B, 1) - (K-1,) -> (B, K-1)
-        logits = g - thresholds  # logit cho P(y > k)
-
-        return logits
+    def forward(self, x):
+        g = self.linear(x)
+        
+        # Đảm bảo các khoảng cách luôn dương
+        diffs = F.softplus(self.diffs_raw)
+        
+        # Cộng dồn: [0, d1, d1+d2, ...]
+        increments = torch.cumsum(diffs, dim=0)
+        # Thêm 0 vào đầu để bias_0 không bị cộng thêm gì
+        increments = torch.cat([torch.zeros(1, device=x.device), increments])
+        
+        # Thresholds = bias_0 + increments
+        thresholds = self.bias_0 + increments
+        
+        return g - thresholds
 
 
 
