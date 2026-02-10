@@ -1,0 +1,67 @@
+[
+    {
+        "File": "Coral_bmi\\Resnet34_coral_20260207-122839\\Resnet34_coral_20260207-122839_oof_predictions.csv",
+        "Kappa (Quadratic)": 0.8344699590889639,
+        "Status": "Success"
+    },
+    {
+        "File": "Coral_bmi_sex\\Resnet34_coral_20260207-113042\\Resnet34_coral_20260207-113042_oof_predictions.csv",
+        "Kappa (Quadratic)": 0.8350303068192475,
+        "Status": "Success"
+    },
+    {
+        "File": "Coral_sex\\Resnet34_coral_20260207-131900\\Resnet34_coral_20260207-131900_oof_predictions.csv",
+        "Kappa (Quadratic)": 0.8217224527974565,
+        "Status": "Success"
+    },
+    {
+        "File": "FocalCos\\Resnet34_FocalCos_20260207-004554\\Resnet34_FocalCos_20260207-004554_oof_predictions.csv",
+        "Kappa (Quadratic)": 0.8465835433495563,
+        "Status": "Success"
+    },
+    {
+        "File": "FocalCos_bmi\\Resnet34_FocalCos_20260207-020853\\Resnet34_FocalCos_20260207-020853_oof_predictions.csv",
+        "Kappa (Quadratic)": 0.8423763721928955,
+        "Status": "Success"
+    },
+    {
+        "File": "FocalCos_bmi_sex\\Resnet34_FocalCos_20260207-012806\\Resnet34_FocalCos_20260207-012806_oof_predictions.csv",
+        "Kappa (Quadratic)": 0.8125431345214525,
+        "Status": "Success"
+    },
+    {
+        "File": "FocalCos_sex\\Resnet34_FocalCos_20260207-025312\\Resnet34_FocalCos_20260207-025312_oof_predictions.csv",
+        "Kappa (Quadratic)": 0.8144867922307426,
+        "Status": "Success"
+    },
+    {
+        "File": "Resnet34_coral\\Resnet34_coral_20260207-092523\\Resnet34_coral_20260207-092523_oof_predictions.csv",
+        "Kappa (Quadratic)": 0.8051543026136385,
+        "Status": "Success"
+    },
+    {
+        "File": "hybrid\\Resnet34_hybrid_20260206-160910\\Resnet34_hybrid_20260206-160910_oof_predictions.csv",
+        "Kappa (Quadratic)": 0.8022734706534529,
+        "Status": "Success"
+    },
+    {
+        "File": "hybrid\\noRm_lowQuality_Resnet34_hybrid_20260207-034222\\Resnet34_hybrid_20260207-034222_oof_predictions.csv",
+        "Kappa (Quadratic)": 0.7952849268836799,
+        "Status": "Success"
+    },
+    {
+        "File": "hybrid_bmi\\Resnet34_hybrid_20260206-174035\\Resnet34_hybrid_20260206-174035_oof_predictions.csv",
+        "Kappa (Quadratic)": 0.7655720232654184,
+        "Status": "Success"
+    },
+    {
+        "File": "hybrid_bmi_sex\\Resnet34_hybrid_20260206-165533\\Resnet34_hybrid_20260206-165533_oof_predictions.csv",
+        "Kappa (Quadratic)": 0.7565138923899148,
+        "Status": "Success"
+    },
+    {
+        "File": "hybrid_sex\\Resnet34_hybrid_20260206-182946\\Resnet34_hybrid_20260206-182946_oof_predictions.csv",
+        "Kappa (Quadratic)": 0.7651047820485767,
+        "Status": "Success"
+    }
+]
