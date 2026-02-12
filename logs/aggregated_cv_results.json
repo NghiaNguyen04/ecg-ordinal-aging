@@ -1,4 +1,29 @@
 {
+    "Coral": {
+        "Resnet34_coral_20260210-160027": {
+            "test_f1_mean": 0.42493849992752075,
+            "test_f1_std": 0.021577605361508056,
+            "test_f1_mean_std": "0.4249 \u00b1 0.0216",
+            "test_precision_mean": 0.44549199342727663,
+            "test_precision_std": 0.01466569885596551,
+            "test_precision_mean_std": "0.4455 \u00b1 0.0147",
+            "test_recall_mean": 0.42211002111434937,
+            "test_recall_std": 0.02313163330335694,
+            "test_recall_mean_std": "0.4221 \u00b1 0.0231",
+            "test_accuracy_mean": 0.5938399195671081,
+            "test_accuracy_std": 0.02364520300536304,
+            "test_accuracy_mean_std": "0.5938 \u00b1 0.0236",
+            "test_balanced_acc_mean": 0.42211002111434937,
+            "test_balanced_acc_std": 0.02313163330335694,
+            "test_balanced_acc_mean_std": "0.4221 \u00b1 0.0231",
+            "test_kappa_mean": 0.5877372980117798,
+            "test_kappa_std": 0.02607757502663657,
+            "test_kappa_mean_std": "0.5877 \u00b1 0.0261",
+            "test_loss_mean": 0.12222599387168884,
+            "test_loss_std": 0.012294429682837657,
+            "test_loss_mean_std": "0.1222 \u00b1 0.0123"
+        }
+    },
     "Coral_bmi": {
         "Resnet34_coral_20260207-122839": {
             "test_f1_mean": 0.4376764476299286,
@@ -295,31 +320,6 @@
             "test_loss_mean": 123.1770248413086,
             "test_loss_std": 21.069211084373986,
             "test_loss_mean_std": "123.1770 \u00b1 21.0692"
-        }
-    },
-    "Resnet34_coral": {
-        "Resnet34_coral_20260207-092523": {
-            "test_f1_mean": 0.4462562084197998,
-            "test_f1_std": 0.040717311232766694,
-            "test_f1_mean_std": "0.4463 \u00b1 0.0407",
-            "test_precision_mean": 0.4837665557861328,
-            "test_precision_std": 0.04152971330941324,
-            "test_precision_mean_std": "0.4838 \u00b1 0.0415",
-            "test_recall_mean": 0.4414175748825073,
-            "test_recall_std": 0.03962730328539296,
-            "test_recall_mean_std": "0.4414 \u00b1 0.0396",
-            "test_accuracy_mean": 0.5980164766311645,
-            "test_accuracy_std": 0.05753883574102221,
-            "test_accuracy_mean_std": "0.5980 \u00b1 0.0575",
-            "test_balanced_acc_mean": 0.4414175748825073,
-            "test_balanced_acc_std": 0.03962730328539296,
-            "test_balanced_acc_mean_std": "0.4414 \u00b1 0.0396",
-            "test_kappa_mean": 0.5943207025527955,
-            "test_kappa_std": 0.063593398217846,
-            "test_kappa_mean_std": "0.5943 \u00b1 0.0636",
-            "test_loss_mean": 0.11543017774820327,
-            "test_loss_std": 0.019776300738227316,
-            "test_loss_mean_std": "0.1154 \u00b1 0.0198"
         }
     }
 }
