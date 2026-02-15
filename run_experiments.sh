@@ -11,7 +11,7 @@ python src/run_parallel_folds.py \
     --batch-size 16 \
     --max-epochs 150 \
     --n-splits 5 \
-    --precision 16-mixed --num-workers 4
+    --precision 16-mixed --num-workers 4 --jobs-per-gpu 5
 
 sleep 10
 
@@ -22,7 +22,7 @@ python src/run_parallel_folds.py \
     --batch-size 16 \
     --max-epochs 150 \
     --n-splits 5 \
-    --precision 16-mixed --num-workers 4
+    --precision 16-mixed --num-workers 4 --jobs-per-gpu 5
 
 sleep 10
 
@@ -34,7 +34,7 @@ python src/run_parallel_folds.py \
     --max-epochs 150 \
     --n-splits 5 \
     --use-bmi --use-sex \
-    --precision 16-mixed --num-workers 4
+    --precision 16-mixed --num-workers 4 --jobs-per-gpu 5
 
 sleep 10
 
@@ -46,7 +46,7 @@ python src/run_parallel_folds.py \
     --max-epochs 150 \
     --n-splits 5 \
     --use-bmi \
-    --precision 16-mixed --num-workers 4
+    --precision 16-mixed --num-workers 4 --jobs-per-gpu 5
 
 sleep 10
 
@@ -58,7 +58,7 @@ python src/run_parallel_folds.py \
     --max-epochs 150 \
     --n-splits 5 \
     --use-sex \
-    --precision 16-mixed --num-workers 4
+    --precision 16-mixed --num-workers 4 --jobs-per-gpu 5
 
 sleep 10
 
@@ -71,7 +71,7 @@ python src/run_parallel_folds.py \
     --max-epochs 150 \
     --n-splits 5 \
     --use-uncertainty-weighting \
-    --precision 16-mixed --num-workers 4
+    --precision 16-mixed --num-workers 4 --jobs-per-gpu 5
 
 sleep 10
 
@@ -83,7 +83,19 @@ python src/run_parallel_folds.py \
     --max-epochs 150 \
     --n-splits 5 \
     --use-uncertainty-weighting --use-sex --use-bmi \
-    --precision 16-mixed --num-workers 4
+    --precision 16-mixed --num-workers 4 --jobs-per-gpu 5
+
+sleep 10
+
+python src/run_parallel_folds.py \
+    --root-dir "data/processed/seg_300s/data_300s_order5_rmNegativeRRI.csv" \
+    --model "Resnet34_FocalCos" \
+    --log-dir "result/FocalCos_sex" \
+    --batch-size 16 \
+    --max-epochs 150 \
+    --n-splits 5 \
+    --use-uncertainty-weighting --use-sex \
+    --precision 16-mixed --num-workers 4 --jobs-per-gpu 5
 
 sleep 10
 
@@ -95,7 +107,7 @@ python src/run_parallel_folds.py \
     --max-epochs 150 \
     --n-splits 5 \
     --use-uncertainty-weighting --use-bmi \
-    --precision 16-mixed --num-workers 4
+    --precision 16-mixed --num-workers 4 --jobs-per-gpu 5
 
 sleep 10
 
@@ -107,7 +119,7 @@ python src/run_parallel_folds.py \
     --batch-size 16 \
     --max-epochs 150 \
     --n-splits 5 \
-    --precision 16-mixed --num-workers 4
+    --precision 16-mixed --num-workers 4 --jobs-per-gpu 5
 
 sleep 10
 
@@ -119,7 +131,7 @@ python src/run_parallel_folds.py \
     --max-epochs 150 \
     --n-splits 5 \
     --use-sex --use-bmi \
-    --precision 16-mixed --num-workers 4
+    --precision 16-mixed --num-workers 4 --jobs-per-gpu 5
 
 sleep 10
 
@@ -131,7 +143,7 @@ python src/run_parallel_folds.py \
     --max-epochs 150 \
     --n-splits 5 \
     --use-bmi \
-    --precision 16-mixed --num-workers 4
+    --precision 16-mixed --num-workers 4 --jobs-per-gpu 5
 
 sleep 10
 
@@ -143,6 +155,6 @@ python src/run_parallel_folds.py \
     --max-epochs 150 \
     --n-splits 5 \
     --use-sex \
-    --precision 16-mixed --num-workers 4
+    --precision 16-mixed --num-workers 4 --jobs-per-gpu 5
 
 echo "All experiments completed!"

@@ -248,7 +248,13 @@ def train(args: argparse.Namespace):
         # elif args.oversampling == "smotenc":
         #     x_train, y_train = smotenc(x_train, y_train)
 
+        # --- Windows Multi-processing Fix ---
+        if os.name == "nt" and args.num_workers > 0:
+            print(f"[WARNING] Windows detected. Setting num_workers from {args.num_workers} to 0 to prevent pickling errors.")
+            args.num_workers = 0
+
         # --- DataModule ---
+
         dm = TSDataModule(
             x_train, y_train, x_val, y_val, x_test, y_test,
             standardize=args.standardize,

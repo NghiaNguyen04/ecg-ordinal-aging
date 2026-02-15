@@ -67,6 +67,7 @@ def main():
     parser.add_argument("--data-seed", type=int, default=42, help="Fixed seed for Outer Split (Data)")
     parser.add_argument("--log-dir", type=str, default="runs_parallel") # output dir
     parser.add_argument("--keep-checkpoints", action="store_true", help="If set, don't delete checkpoints after aggregation.")
+    parser.add_argument("--jobs-per-gpu", type=int, default=1, help="Number of concurrent jobs per GPU (default 1).")
     
     # Capture everything else to pass to run.py
     args, unknown = parser.parse_known_args()
@@ -90,77 +91,127 @@ def main():
     all_folds_oof_dfs = []
 
     for fold_idx in folds_to_run:
-        print(f"\n========================================")
         print(f" PROCESSING FOLD {fold_idx} / {args.n_splits - 1}")
         print(f"========================================")
 
-        # Determine available GPUs
-        num_gpus = torch.cuda.device_count()
-        if num_gpus == 0:
-            print("  No GPU detected. Running sequentially on CPU...")
-            num_workers_par = 1
-            gpu_ids = [-1]
-        else:
-            print(f"  Detected {num_gpus} GPUs. Running repeats in parallel across GPUs...")
-            num_workers_par = num_gpus
-            gpu_ids = list(range(num_gpus))
-
         # Seeds for the 5 parallel runs (Inner Split & Model Init)
         seeds = [args.data_seed + i + 1 for i in range(5)]
-        processes = []
         base_name = f"{model_name}_Fold{fold_idx}_Parallel"
-        
-        # Batch launches by GPU count
+
+        # --- 1. Prepare all tasks for this fold ---
+        tasks = []
         for i, seed in enumerate(seeds):
-            run_name = f"{base_name}_Rep{i}_Seed{seed}"
-            run_dir = os.path.join(args.log_dir, run_name)
-            os.makedirs(run_dir, exist_ok=True)
-            log_path = os.path.join(run_dir, "process_output.log")
-            
-            # Rotate through GPUs
-            current_gpu = gpu_ids[i % num_workers_par]
-            
-            # Construct environment with specific GPU
-            env = os.environ.copy()
-            if current_gpu != -1:
-                env["CUDA_VISIBLE_DEVICES"] = str(current_gpu)
-                print(f"  [Rep {i}] Launching on GPU {current_gpu}...")
-            else:
-                print(f"  [Rep {i}] Launching on CPU...")
+            run_name = f"{model_name}_Fold{fold_idx}_Parallel_Rep{i}_Seed{seed}"
+            tasks.append({
+                "run_name": run_name,
+                "seed": seed,
+                "rep_idx": i
+            })
 
-            # Construct command for run.py
-            cmd = [
-                sys.executable, "src/run.py",
-                "--fold-index", str(fold_idx),
-                "--data-seed", str(args.data_seed),
-                "--seed", str(seed),
-                "--name", run_name,
-                "--log-dir", args.log_dir
-            ]
-            cmd.extend(unknown)
-            
-            log_file = open(log_path, "w")
-            p = subprocess.Popen(cmd, stdout=log_file, stderr=subprocess.STDOUT, env=env)
-            processes.append((p, log_file, run_name))
-            
-            # If we've hit the max parallel workers, wait for them
-            if len(processes) >= num_workers_par:
-                print(f"  Waiting for current batch of {num_workers_par} repeats to finish...")
-                for p, log_f, r_name in processes:
-                    exit_code = p.wait()
-                    log_f.close()
+        # --- 2. Determine Concurrency ---
+        num_gpus = torch.cuda.device_count()
+        # You have 24GB RAM, so we can safely run multiple jobs per GPU
+        jobs_per_gpu = args.jobs_per_gpu
+        max_parallel = max(1, num_gpus * jobs_per_gpu)
+        
+        print(f"  Detected {num_gpus} GPUs. Max parallel jobs: {max_parallel} ({jobs_per_gpu} per GPU)")
+
+        active_processes = []
+        task_idx = 0
+        
+        while task_idx < len(tasks) or active_processes:
+            # Fill up slots
+            while len(active_processes) < max_parallel and task_idx < len(tasks):
+                t = tasks[task_idx]
+                run_dir = os.path.join(args.log_dir, t["run_name"])
+                os.makedirs(run_dir, exist_ok=True)
+                log_path = os.path.join(run_dir, "process_output.log")
+                
+                # Simple GPU allocation: (task_idx % num_gpus)
+                gpu_id = task_idx % num_gpus if num_gpus > 0 else -1
+                
+                env = os.environ.copy()
+                if gpu_id != -1:
+                    env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
+                    print(f"  [Rep {t['rep_idx']}] Launching on GPU {gpu_id}...")
+                else:
+                    print(f"  [Rep {t['rep_idx']}] Launching on CPU...")
+
+                cmd = [
+                    sys.executable, "src/run.py",
+                    "--fold-index", str(fold_idx),
+                    "--data-seed", str(args.data_seed),
+                    "--seed", str(t["seed"]),
+                    "--name", t["run_name"],
+                    "--log-dir", args.log_dir
+                ]
+                cmd.extend(unknown)
+                
+                log_file = open(log_path, "w")
+                p = subprocess.Popen(cmd, stdout=log_file, stderr=subprocess.STDOUT, env=env)
+                active_processes.append({"p": p, "log_f": log_file, "run_name": t["run_name"]})
+                task_idx += 1
+
+            # Check for finished processes
+            for ap in active_processes[:]:
+                if ap["p"].poll() is not None: # Process finished
+                    exit_code = ap["p"].returncode
+                    ap["log_f"].close()
                     if exit_code != 0:
-                        print(f"  Warning: Repeat {r_name} failed with exit code {exit_code}.")
-                processes = []
+                        print(f"  !! Error: {ap['run_name']} failed (code {exit_code}).")
+                        # Print snippet of log
+                        try:
+                            # Use absolute path for log file safety
+                            log_file_path = os.path.join(os.getcwd(), ap["log_f"].name)
+                            with open(log_file_path, "r") as f:
+                                lines = f.readlines()
+                                snippet = "".join(lines[-15:]) # Get last 15 lines
+                                print(f"--- LOG SNIPPET ({ap['run_name']}) ---\n{snippet}\n-------------------------")
+                        except Exception as e:
+                            print(f"Could not read log: {e}")
+                    else:
+                        print(f"  √ Finished: {ap['run_name']}")
+                    active_processes.remove(ap)
+            
+            # --- 3. Progress Reporting ---
+            if active_processes:
+                prog_info = []
+                for ap in active_processes:
+                    try:
+                        log_file_path = os.path.join(os.getcwd(), ap["log_f"].name)
+                        with open(log_file_path, "r") as f:
+                            content = f.read()
+                            import re
+                            # Find Epoch and Percentage: e.g. "Epoch 5:  80%|"
+                            epoch_match = re.findall(r"Epoch\s+(\d+)", content)
+                            pct_match = re.findall(r"(\d+)%\|", content)
+                            
+                            last_epoch = epoch_match[-1] if epoch_match else "0"
+                            last_pct = int(pct_match[-1]) if pct_match else 0
+                            
+                            # Create a mini bar (length 10)
+                            bar_len = 10
+                            filled = int(last_pct / 100 * bar_len)
+                            bar = "#" * filled + "-" * (bar_len - filled)
+                            
+                            rep_str = ap['run_name'].split('_')[-2].replace("Rep", "R") # R0, R1...
+                            prog_info.append(f"{rep_str}: E{last_epoch} [{bar}] {last_pct}%")
+                    except:
+                        prog_info.append(f"R?: ?")
+                
+                # Update line (using a slightly safer way for Windows terminal)
+                status_line = f"\r  Status: {' | '.join(prog_info)}"
+                # Fill with spaces to clear old longer lines
+                sys.stdout.write(status_line.ljust(120))
+                sys.stdout.flush()
 
-        # Wait for any remaining processes
-        if processes:
-            print("  Waiting for remaining repeats to finish...")
-            for p, log_f, r_name in processes:
-                exit_code = p.wait()
-                log_f.close()
-                if exit_code != 0:
-                    print(f"  Warning: Repeat {r_name} failed.")
+
+
+            time.sleep(5) # Check every 5 seconds
+        print() # New line after tasks finished
+
+
+
 
         # --- Aggregate THIS Fold ---
         print(f"  Aggregating Fold {fold_idx} results...")
