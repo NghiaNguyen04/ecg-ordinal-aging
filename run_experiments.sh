@@ -22,7 +22,7 @@ python src/run_parallel_folds.py \
     --batch-size 16 \
     --max-epochs 150 \
     --n-splits 5 \
-    --precision 16-mixed --num-workers 4 --jobs-per-gpu 5
+    --precision 16-mixed --num-workers 2 --jobs-per-gpu 5
 
 sleep 10
 
