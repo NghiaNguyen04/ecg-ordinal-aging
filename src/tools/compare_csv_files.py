@@ -84,7 +84,7 @@ if __name__ == "__main__":
     # Using absolute paths or relative to project root
     base_dir = r"D:\OneDrive\Desktop\The big project\ecg-ordinal-aging"
     
-    file_new = os.path.join(base_dir, "data", "processed", "seg_300s", "data_300s_order5_new.csv")
-    file_old = os.path.join(base_dir, "data", "processed", "seg_300s", "data_300s_order5.csv")
+    file_new = os.path.join(base_dir, "data\processed\seg_300s\data_300s_order5_quadratic.csv")
+    file_old = os.path.join(base_dir, "data\processed\seg_300s_new\data_300s_order5.csv")
     
     compare_files(file_new, file_old)

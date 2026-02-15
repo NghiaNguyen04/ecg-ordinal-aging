@@ -187,8 +187,9 @@ def train(args: argparse.Namespace):
     args.seq_len = x_full.shape[1]
     print("args.seq_len: ", args.seq_len)
 
-    # ---------- Splitter train- test ----------
-    splitter_train_test = StratifiedGroupKFold(n_splits=args.n_splits, shuffle=True, random_state=args.seed)
+    # ---------- Splitter train- test (FIXED by data_seed) ----------
+    # This ensures all parallel runs with same data_seed see SAME Test set
+    splitter_train_test = StratifiedGroupKFold(n_splits=args.n_splits, shuffle=True, random_state=args.data_seed)
     split_iter_train_test = list(splitter_train_test.split(x_full, y_full, id_groups))
 
     # ---------- Chọn fold ----------
@@ -198,7 +199,7 @@ def train(args: argparse.Namespace):
 
     # ---------- Tên run chung & Base directory ----------
     run_timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    exp_name = args.name or f"{args.model}_{run_timestamp}"
+    exp_name = args.name or f"{args.model}_{run_timestamp}_seed{args.seed}" # Include seed in name to avoid overwrite
     base_exp_dir = os.path.join(args.log_dir, exp_name)
     os.makedirs(base_exp_dir, exist_ok=True)
 
@@ -214,11 +215,11 @@ def train(args: argparse.Namespace):
         y_tv = y_full[train_valid_idx]
         groups_tv = np.array(id_groups)[train_valid_idx]
 
-        # --- Inner split: train / valid trên phần train_valid ---
+        # --- Inner split: train / valid trên phần train_valid (VARIED by args.seed) ---
         splitter_train_valid = StratifiedGroupKFold(
             n_splits=5,
             shuffle=True,
-            random_state=args.seed
+            random_state=args.seed  # Controls variability of Train/Val split
         )  # ~20% valid
 
         inner_train_idx, inner_valid_idx = next(
@@ -423,7 +424,10 @@ def train(args: argparse.Namespace):
         print()
         for c in metric_cols:
             mu = dfm[c].mean()
-            sd = dfm[c].std(ddof=1)
+            if len(dfm) > 1:
+                sd = dfm[c].std(ddof=1)
+            else:
+                sd = 0.0
             cv_stats[c] = {
                 "mean": float(mu),
                 "std": float(sd),
@@ -527,7 +531,7 @@ def main():
     parser.add_argument("--no-standardize", action="store_false", dest="standardize", help="Per-channel standardization (TRAIN stats)")
     parser.add_argument("--use-weighted-sampler", default=False, action="store_true", help="Use WeightedRandomSampler on train set")
     parser.add_argument("--batch-size", type=int, default=32)
-    parser.add_argument("--num-workers", type=int, default=8)
+    parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--oversampling", type=str, default="adasyn")
@@ -535,9 +539,11 @@ def main():
     parser.add_argument("--use-sex", action="store_true", help="Include sex features")
 
     # CV control
-    parser.add_argument("--n-splits", type=int, default=5, help="Number of CV folds")  # Sửa: n_splits -> n-splits
+    parser.add_argument("--n-splits", type=int, default=5, help="Number of CV folds")
     parser.add_argument("--fold-index", type=int, default=-1,
-                        help="Fold to train (0..n_splits-1). Use -1 to baseline_model all folds and report mean ± std.")
+                        help="Fold to train (0..n_splits-1). Use -1 to loop all folds.")
+    parser.add_argument("--data-seed", type=int, default=42, 
+                        help="Seed for OUTSIDE (Train/Test) split. Keep fixed for same Test set.")
 
     # Model
     parser.add_argument("--in-channels", type=int, default=1, help="If None, infer from data")

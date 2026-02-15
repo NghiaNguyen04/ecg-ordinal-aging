@@ -30,6 +30,16 @@ class AAGINGLoader:
     # --------------------- public API --------------------- #
     def load(self) -> Dict[str, np.ndarray]:
         df_full = self._read_csv()
+        
+        # --- Handle NaNs ---
+        if df_full.isnull().values.any():
+            nan_count = df_full.isnull().sum().sum()
+            print(f"[WARNING] Found {nan_count} NaNs in dataset. Filling numeric columns with mean...")
+            numeric_cols = df_full.select_dtypes(include=[np.number]).columns
+            df_full[numeric_cols] = df_full[numeric_cols].fillna(df_full[numeric_cols].mean())
+            # Handle any remaining NaNs (e.g. in string columns, though unlikely to break training unless used)
+            df_full.fillna(0, inplace=True)
+
         # ---- Features ----
         if self.use_sex and self.use_bmi:
             x_train = df_full.iloc[:, 2:].to_numpy(dtype=self.float_dtype)

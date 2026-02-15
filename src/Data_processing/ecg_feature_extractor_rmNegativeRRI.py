@@ -82,6 +82,7 @@ def interpolate_rri(times_rri, rri, fs_interp=4.0):
     return t_interp, y
 
 
+
 def segment_rri(t_interp, rri_interp, fs_interp=4.0, window_sec=300):
     window_size = int(window_sec * fs_interp)
     segments = []
@@ -90,18 +91,72 @@ def segment_rri(t_interp, rri_interp, fs_interp=4.0, window_sec=300):
     return segments
 
 
-def extract_hrv_features(rri_segments, fs_interp):
+def segment_raw_rri(times_rri, rri, window_sec=300):
+    """
+    Cắt RRI gốc thành các đoạn theo cửa sổ thời gian (ví dụ 0-300s, 300-600s...)
+    Trả về list các mảng rri (giữ nguyên độ biến thiên tự nhiên)
+    """
+    segments = []
+    # times_rri là mảng cộng dồn thời gian (tại các đỉnh R), đơn vị giây
+    if len(times_rri) == 0:
+        return []
+    
+    max_time = times_rri[-1]
+    
+    current_time = 0
+    while True:
+        next_time = current_time + window_sec
+        
+        # Lấy các chỉ số mà times_rri nằm trong [current_time, next_time)
+        mask = (times_rri >= current_time) & (times_rri < next_time)
+        
+        if current_time > max_time:
+            break
+            
+        rri_seg = rri[mask]
+        segments.append(rri_seg)
+        
+        current_time = next_time
+        
+    return segments
+
+
+def extract_hrv_features(raw_rri_segments, interp_rri_segments, fs_interp):
     rows = []
-    for i, rri in enumerate(rri_segments):
-        # Lọc thô: nếu đoạn tín hiệu là đường thẳng (variance thấp) -> bỏ
-        if np.var(rri) < 1e-6: continue
+    
+    for i, (raw_rri, rri_interp) in enumerate(zip(raw_rri_segments, interp_rri_segments)):
+        if len(rri_interp) < 10 or np.var(rri_interp) < 1e-6: 
+            continue
 
-        time_axis = np.linspace(0, len(rri) / fs_interp, len(rri))
+        if len(raw_rri) < 30: 
+            continue
+
         try:
-            hrv_all = nk.hrv({"RRI": rri * 1000, "RRI_Time": time_axis}, sampling_rate=fs_interp, show=False)
-            feat = hrv_all.iloc[0].to_dict()
+            feat = {}
+            
+            # --- A. Frequency Domain (From Interpolated 4Hz) ---
+            time_axis = np.linspace(0, len(rri_interp) / fs_interp, len(rri_interp))
+            hrv_freq = nk.hrv({"RRI": rri_interp * 1000, "RRI_Time": time_axis}, 
+                               sampling_rate=fs_interp, show=False)
+            
+            freq_cols = [c for c in hrv_freq.columns if any(x in c for x in ["VLF", "LF", "HF", "TP"])]
+            for col in freq_cols:
+                feat[col] = hrv_freq.iloc[0][col]
 
-            # Log transform an toàn
+            # --- B. Time & Nonlinear (From Raw RRI) ---
+            peaks_sim = np.cumsum(np.concatenate(([0], raw_rri))) * 1000 
+            peaks_sim = peaks_sim.astype(int)
+            
+            # Time Domain
+            hrv_time = nk.hrv_time(peaks=peaks_sim, sampling_rate=1000, show=False)
+            feat.update(hrv_time.iloc[0].to_dict())
+            
+            # Nonlinear Domain
+            hrv_non = nk.hrv_nonlinear(peaks=peaks_sim, sampling_rate=1000, show=False)
+            feat.update(hrv_non.iloc[0].to_dict())
+
+            # --- C. Post-processing ---
+            # Log transform
             for key in ["HRV_VLF", "HRV_LF", "HRV_HF", "HRV_TP"]:
                 val = feat.get(key, np.nan)
                 target = f"HRV_log{key.split('_')[1] if key != 'HRV_TP' else 'Tot'}"
@@ -109,18 +164,19 @@ def extract_hrv_features(rri_segments, fs_interp):
 
             feat["Segment_Order"] = i
             rows.append(feat)
-        except:
+        except Exception as e:
             continue
 
     if not rows: return None
 
     df = pd.DataFrame(rows)
-    # Chỉ giữ các cột cố định
-    avail_cols = [c for c in FIXED_HRV_COLS if c in df.columns]
+    df["Segment_Order"] = [r["Segment_Order"] for r in rows]
+    
+    target_cols = FIXED_HRV_COLS + ["Segment_Order"]
+    avail_cols = [c for c in target_cols if c in df.columns]
     df = df[avail_cols]
 
-    # Xóa dòng có NaN tại đây luôn để đảm bảo sạch
-    return df.dropna()
+    return df
 
 
 def process_record(args):
@@ -135,38 +191,42 @@ def process_record(args):
         fs = record.fs
         raw_ecg = record.p_signal[:, 0]
     except Exception as e:
-        raise ValueError(f"Failed to read record: {e}")
+        return None
 
     try:
         rpeaks = detect_rpeaks(raw_ecg, fs, filter_order)
+        if len(rpeaks) < 10: return None
+        
         times_rri, rri = compute_rri(rpeaks, fs)
+        
+        raw_rri_segs = segment_raw_rri(times_rri, rri, window_sec=window_sec)
         t_interp, rri_interp = interpolate_rri(times_rri, rri, fs_interp=FS_INTERP)
-        rri_segs = segment_rri(t_interp, rri_interp, fs_interp=FS_INTERP, window_sec=window_sec)
+        interp_rri_segs = segment_rri(t_interp, rri_interp, fs_interp=FS_INTERP, window_sec=window_sec)
 
-        if not rri_segs: return None
+        if not interp_rri_segs: return None
+        
+        min_len = min(len(raw_rri_segs), len(interp_rri_segs))
+        raw_rri_segs = raw_rri_segs[:min_len]
+        interp_rri_segs = interp_rri_segs[:min_len]
 
-        # Tính HRV và lọc sạch
-        df_hrv = extract_hrv_features(rri_segs, FS_INTERP)
+        df_hrv = extract_hrv_features(raw_rri_segs, interp_rri_segs, FS_INTERP)
         if df_hrv is None or df_hrv.empty: return None
 
-        # Đồng bộ lại RRI segments với HRV (vì HRV có thể bị drop dòng lỗi)
-        valid_idx = df_hrv.index.tolist()
-        valid_rri = [rri_segs[i] for i in valid_idx]
+        valid_orders = df_hrv["Segment_Order"].values.astype(int)
+        valid_rri = [interp_rri_segs[i] for i in valid_orders]
 
         df_rri = pd.DataFrame(valid_rri)
         df_rri.columns = [f"RRI_{j}" for j in range(df_rri.shape[1])]
 
-        # Ghép lại
         df_rri.reset_index(drop=True, inplace=True)
         df_hrv.reset_index(drop=True, inplace=True)
+        
         df_combined = pd.concat([df_rri, df_hrv], axis=1)
-
         df_combined["ID"] = rec
         return df_combined
 
     except Exception as e:
-        # Propagate error for debugging
-        raise e
+        return None
 
 
 # ----------------------------------------------------------------------------------
@@ -209,37 +269,20 @@ def process_and_save_realtime(raw_dir, df_metadata, output_path, window_sec, max
     hea_paths = glob.glob(os.path.join(raw_dir, "*.hea"))
     all_recs = [os.path.splitext(os.path.basename(p))[0] for p in hea_paths]
     
-    # Filter by metadata
     record_names = [r for r in all_recs if r in valid_ids]
-
-    # Filter by target list if provided
     if target_id_list:
         record_names = [r for r in record_names if r in target_id_list]
-        print(f"Filtered to {len(record_names)} target IDs.")
 
     print(f"Start processing {len(record_names)} records. Saving to: {output_path}")
 
-    # Xóa file cũ nếu tồn tại để ghi mới (hoặc bạn có thể comment dòng này nếu muốn nối tiếp file cũ)
-    # Xóa file cũ nếu tồn tại để ghi mới (CHỈ KHI KHÔNG CÓ target_id_list)
-    # Nếu đang chạy debug cho 1 list cụ thể, ta không nên xóa file gốc nếu file đó là file chính.
-    # Nhưng ở đây hàm này ghi ra output_path.
     if target_id_list is None:
         if os.path.exists(output_path):
             os.remove(output_path)
-            print("Deleted old file. Starting fresh.")
-    else:
-        print("Running in partial mode (Target IDs provided). Appending or creating new file without deleting old one.")
-
-    # Biến kiểm soát việc ghi Header
-    # Nếu file đã tồn tại và có dữ liệu (kích thước > 0), ta coi như đã có header -> không ghi lại
+    
     header_written = False
     if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
         header_written = True
 
-    # Xác định tất cả cột RRI (dựa vào window_sec) để chuẩn hóa cấu trúc
-    # 300s * 4Hz = 1200 points -> RRI_0 đến RRI_1199
-    # Lưu ý: Số lượng cột RRI thực tế phụ thuộc vào segment, nhưng ta cần biết max để reindex
-    # Tuy nhiên, cách an toàn nhất là lấy từ batch đầu tiên thành công.
     final_columns_order = None
 
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -252,27 +295,16 @@ def process_and_save_realtime(raw_dir, df_metadata, output_path, window_sec, max
             rec = futures[fut]
             try:
                 df_res = fut.result()
-
-                # Nếu xử lý thành công và có dữ liệu
                 if df_res is not None and not df_res.empty:
-
-                    # 1. Merge Metadata ngay lập tức
-                    # Chỉ merge đúng row của ID này
+                    # Merge Metadata
                     row_meta = df_metadata[df_metadata["ID"] == rec]
-                    if row_meta.empty: continue  # Nếu ko tìm thấy meta thì bỏ qua (vì ko có label)
+                    if row_meta.empty: continue
 
-                    # Merge kiểu cross join hoặc left join trên ID (ở đây dùng merge bình thường)
                     df_merged = df_res.merge(row_meta, on="ID", how="left")
-
-                    # 2. Xử lý sạch lần cuối (Check NaN do merge hoặc sót lại)
-                    df_merged = df_merged.dropna()
-                    if df_merged.empty: continue
-
-                    # 3. Chuẩn hóa cột (Sắp xếp cột cho đẹp và đồng nhất)
+                    
+                    # Chuẩn hóa cột
                     if final_columns_order is None:
-                        # Lần đầu tiên ghi file: Thiết lập thứ tự cột chuẩn
                         cols = df_merged.columns.tolist()
-                        # Đưa ID và Age_group lên đầu, các cột đặc trưng ở giữa, BMI và Sex xuống cuối
                         meta_start = ["ID", "Age_group"]
                         meta_end = ["BMI", "Sex"]
                         priority_start = [c for c in meta_start if c in cols]
@@ -280,22 +312,19 @@ def process_and_save_realtime(raw_dir, df_metadata, output_path, window_sec, max
                         others = [c for c in cols if c not in priority_start and c not in priority_end]
                         final_columns_order = priority_start + others + priority_end
 
-                    # Reindex để đảm bảo đúng thứ tự cột, nếu thiếu cột nào thì điền NaN (nhưng ta đã dropna nên sẽ an toàn)
                     df_final_chunk = df_merged.reindex(columns=final_columns_order)
-
-                    # Double check dropna sau khi reindex (đề phòng cột lạ)
-                    df_final_chunk = df_final_chunk.dropna()
-                    if df_final_chunk.empty: continue
-
-                    # 4. GHI NGAY VÀO FILE (Append Mode)
-                    df_final_chunk.to_csv(
-                        output_path,
-                        mode='a',  # Chế độ ghi nối đuôi
-                        header=not header_written,  # Chỉ ghi header lần đầu
-                        index=False
-                    )
-                    header_written = True
-
+                    
+                    # Bỏ các dòng có NaN ở các cột quan trọng (ID, Age_group)
+                    df_final_chunk = df_final_chunk.dropna(subset=["ID", "Age_group"])
+                    
+                    if not df_final_chunk.empty:
+                        df_final_chunk.to_csv(
+                            output_path,
+                            mode='a',
+                            header=not header_written,
+                            index=False
+                        )
+                        header_written = True
             except Exception as e:
                 print(f"Error saving {rec}: {e}")
 
