@@ -1,6 +1,8 @@
 import warnings
-# from pydantic._internal._generate_schema import UnsupportedFieldAttributeWarning
-# warnings.filterwarnings("ignore", category=UnsupportedFieldAttributeWarning)
+warnings.filterwarnings("ignore")
+import logging
+logging.getLogger("pytorch_lightning").setLevel(logging.ERROR)
+logging.getLogger("wandb").setLevel(logging.ERROR)
 
 
 import os, re
@@ -284,7 +286,7 @@ def train(args: argparse.Namespace):
         trainer = pl.Trainer(
             max_epochs=args.max_epochs,
             accelerator="auto",
-            devices="auto",
+            devices=1,
             precision=args.precision,
             callbacks=[ckpt, early, lrmon, history_cb],
             logger=logger,
@@ -517,7 +519,7 @@ def main():
     parser.add_argument("--root-dir", type=str, required=True,
                         help="Path to TRAIN/TEST data folder")
 
-    parser.add_argument("--dataset-name", type=str, required=True,
+    parser.add_argument("--dataset-name", type=str, required=False,
                         help="dataset name")
 
     parser.add_argument("--model", type=str, required=True,

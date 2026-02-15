@@ -8,6 +8,7 @@ import pandas as pd
 import json
 import numpy as np
 from sklearn.metrics import f1_score, accuracy_score, cohen_kappa_score
+import torch
 
 def bootstrap_ci(df_oof):
     """
@@ -65,6 +66,7 @@ def main():
     parser.add_argument("--n-splits", type=int, default=5, help="Number of folds (default 5).")
     parser.add_argument("--data-seed", type=int, default=42, help="Fixed seed for Outer Split (Data)")
     parser.add_argument("--log-dir", type=str, default="runs_parallel") # output dir
+    parser.add_argument("--keep-checkpoints", action="store_true", help="If set, don't delete checkpoints after aggregation.")
     
     # Capture everything else to pass to run.py
     args, unknown = parser.parse_known_args()
@@ -92,17 +94,40 @@ def main():
         print(f" PROCESSING FOLD {fold_idx} / {args.n_splits - 1}")
         print(f"========================================")
 
+        # Determine available GPUs
+        num_gpus = torch.cuda.device_count()
+        if num_gpus == 0:
+            print("  No GPU detected. Running sequentially on CPU...")
+            num_workers_par = 1
+            gpu_ids = [-1]
+        else:
+            print(f"  Detected {num_gpus} GPUs. Running repeats in parallel across GPUs...")
+            num_workers_par = num_gpus
+            gpu_ids = list(range(num_gpus))
+
         # Seeds for the 5 parallel runs (Inner Split & Model Init)
         seeds = [args.data_seed + i + 1 for i in range(5)]
-        
         processes = []
         base_name = f"{model_name}_Fold{fold_idx}_Parallel"
         
-        print(f"--- Launching 5 Parallel Repeats for Fold {fold_idx} ---")
-        
+        # Batch launches by GPU count
         for i, seed in enumerate(seeds):
             run_name = f"{base_name}_Rep{i}_Seed{seed}"
+            run_dir = os.path.join(args.log_dir, run_name)
+            os.makedirs(run_dir, exist_ok=True)
+            log_path = os.path.join(run_dir, "process_output.log")
             
+            # Rotate through GPUs
+            current_gpu = gpu_ids[i % num_workers_par]
+            
+            # Construct environment with specific GPU
+            env = os.environ.copy()
+            if current_gpu != -1:
+                env["CUDA_VISIBLE_DEVICES"] = str(current_gpu)
+                print(f"  [Rep {i}] Launching on GPU {current_gpu}...")
+            else:
+                print(f"  [Rep {i}] Launching on CPU...")
+
             # Construct command for run.py
             cmd = [
                 sys.executable, "src/run.py",
@@ -114,15 +139,28 @@ def main():
             ]
             cmd.extend(unknown)
             
-            # print(f"  [Rep {i}] Launching...")
-            p = subprocess.Popen(cmd)
-            processes.append(p)
+            log_file = open(log_path, "w")
+            p = subprocess.Popen(cmd, stdout=log_file, stderr=subprocess.STDOUT, env=env)
+            processes.append((p, log_file, run_name))
             
-        print("  Waiting for 5 repeats to finish...")
-        exit_codes = [p.wait() for p in processes]
-        
-        if any(c != 0 for c in exit_codes):
-            print(f"  Warning: Some repeats failed for Fold {fold_idx}.")
+            # If we've hit the max parallel workers, wait for them
+            if len(processes) >= num_workers_par:
+                print(f"  Waiting for current batch of {num_workers_par} repeats to finish...")
+                for p, log_f, r_name in processes:
+                    exit_code = p.wait()
+                    log_f.close()
+                    if exit_code != 0:
+                        print(f"  Warning: Repeat {r_name} failed with exit code {exit_code}.")
+                processes = []
+
+        # Wait for any remaining processes
+        if processes:
+            print("  Waiting for remaining repeats to finish...")
+            for p, log_f, r_name in processes:
+                exit_code = p.wait()
+                log_f.close()
+                if exit_code != 0:
+                    print(f"  Warning: Repeat {r_name} failed.")
 
         # --- Aggregate THIS Fold ---
         print(f"  Aggregating Fold {fold_idx} results...")
@@ -148,11 +186,22 @@ def main():
             
             # Add to global list
             all_folds_oof_dfs.append(df_fold_oof)
-            
-            # Optional: Calc stats for just this fold
-            # stats = bootstrap_ci(df_fold_oof)
-            # with open(os.path.join(agg_dir, "bootstrapped_stats.json"), "w") as f:
-            #     json.dump(stats, f, indent=2)
+
+            # --- Cleanup Checkpoints (Optional) ---
+            if not args.keep_checkpoints:
+                print(f"  Cleaning up checkpoints for Fold {fold_idx} to save space...")
+                for i, seed in enumerate(seeds):
+                    run_name = f"{base_name}_Rep{i}_Seed{seed}"
+                    # Checkpoints are usually in log_dir/run_name/fold_X/checkpoints
+                    # We can use glob to find and remove them
+                    ckpt_pattern = os.path.join(args.log_dir, run_name, "fold_*", "checkpoints")
+                    for ckpt_dir in glob.glob(ckpt_pattern):
+                        try:
+                            import shutil
+                            shutil.rmtree(ckpt_dir)
+                            # print(f"    Removed: {ckpt_dir}")
+                        except Exception as e:
+                            print(f"    Failed to remove {ckpt_dir}: {e}")
         else:
             print(f"  No OOF results found for Fold {fold_idx}")
 
